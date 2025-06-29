@@ -4,10 +4,9 @@ import pg from "pg";
 import fetch from "node-fetch";
 import path from "path"
 import { fileURLToPath } from "url";
-
-const dotenv = require("dotenv");
+import dotenv from "dotenv";
 dotenv.config();
-const express = require("express");
+
 const app = express();
 app.set("view engine", "ejs")
 const port = process.env.PORT || 3000
