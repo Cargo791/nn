@@ -4,9 +4,11 @@ import pg from "pg";
 import fetch from "node-fetch";
 import path from "path"
 import { fileURLToPath } from "url";
-import dotenv from "dotenv"
-dotenv.config()
 
+
+// index.js
+const dotenv = require("dotenv");
+dotenv.config();
 const express = require("express");
 const app = express();
 app.set("view engine", "ejs")
@@ -104,7 +106,7 @@ app.post("/login", async (req, res) => {
            paymentStatus: 'none',
            btc:user.btc_balance,
            sol:user.sol_balance,
-           eth:user.eth_eth,
+           eth:user.eth_balance,
            bnb:user.bnb_balance,
            btcAmount: null,
            btcAddress: null,
