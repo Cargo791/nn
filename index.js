@@ -1,6 +1,5 @@
 import express from "express";
 import bodyParser from "body-parser";
-import pg from "pg";
 import fetch from "node-fetch";
 import path from "path"
 import { fileURLToPath } from "url";
