@@ -14,13 +14,21 @@ const __filename = fileURLToPath (import.meta.url)
 const __dirname = path.dirname(__filename)
 //const prices = await getCryptoPrices()
 
+
 const db = new pg.Client({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
 });
-db.connect();
+try {
+  await db.connect();
+  console.log("connected to database");
+} catch (err) {
+  console.error("Failed to connect to database:", err);
+  process.exit(1);
+}
+
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
