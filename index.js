@@ -14,12 +14,19 @@ const __filename = fileURLToPath (import.meta.url)
 const __dirname = path.dirname(__filename)
 //const prices = await getCryptoPrices()
 
-const db = new pg.Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+const pg = require('pg');
+const { parse } = require('pg-connection-string');
+
+// Parse the connection string manually
+const config = parse(process.env.DATABASE_URL);
+
+// Force IPv4
+config.ssl = {
+  rejectUnauthorized: false,
+};
+config.family = 4;
+
+const db = new pg.Client(config);
 
 db.connect((err) => {
   if (err) {
