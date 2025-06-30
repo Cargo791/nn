@@ -58,7 +58,6 @@ app.post("/register", async (req, res) => {
       res.render("secrets.ejs", { 
         name,
          email: email,
-         balance: user.balance,
            paymentStatus: 'none',
            btc:user.btc_balance,
            sol:user.sol_balance,
