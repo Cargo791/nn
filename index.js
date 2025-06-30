@@ -104,44 +104,50 @@ app.post("/login", async (req, res) => {
   const email = req.body.username;
   const password = req.body.password;
 
+  console.log("➡️ Login attempt:", { email, password });
+
   try {
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
+    const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+    console.log("🔍 User lookup result:", result.rows);
+
     if (result.rows.length > 0) {
       const user = result.rows[0];
       const storedPassword = user.password;
 
       if (password === storedPassword) {
         const prices = await getCryptoPrices();
+        console.log("✅ Login success, rendering secrets page");
+
         res.render("secrets.ejs", {
-           name: user.full_name,
-           email: email,
-           balance: user.balance,
-           paymentStatus: 'none',
-           btc:user.btc_balance,
-           sol:user.sol_balance,
-           eth:user.eth_balance,
-           bnb:user.bnb_balance,
-           btcAmount: null,
-           btcAddress: null,
-           solAmount: null, 
-           solAddress: null,
-           ethAmount: null,
-           ethAddress: null,
-           bnbAmount: null,
-           bnbAddress: null,
-           prices:prices
-          
-          });
+          name: user.full_name,
+          email: email,
+          balance: user.balance,
+          paymentStatus: 'none',
+          btc: user.btc_balance,
+          sol: user.sol_balance,
+          eth: user.eth_balance,
+          bnb: user.bnb_balance,
+          btcAmount: null,
+          btcAddress: null,
+          solAmount: null,
+          solAddress: null,
+          ethAmount: null,
+          ethAddress: null,
+          bnbAmount: null,
+          bnbAddress: null,
+          prices: prices
+        });
       } else {
+        console.log("❌ Incorrect password");
         res.send("Incorrect Password");
       }
     } else {
+      console.log("❌ User not found");
       res.send("User not found");
     }
   } catch (err) {
-    console.log(err);
+    console.error("❌ LOGIN ERROR:", err);
+    res.status(500).send("Server error: " + err.message);
   }
 });
 
