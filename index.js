@@ -3,10 +3,11 @@ import bodyParser from "body-parser";
 import fetch from "node-fetch";
 import path from "path"
 import pg from 'pg';
-import { parse } from 'pg-connection-string';
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 dotenv.config();
+import pkg from 'pg-connection-string';
+const { parse } = pkg;
 
 const app = express();
 app.set("view engine", "ejs")
