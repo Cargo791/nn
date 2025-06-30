@@ -45,7 +45,9 @@ app.get("/register", (req, res) => {
   res.render("register.ejs");
 });
 
-app.post("/register", async (req, res) => {
+
+
+  app.post("/register", async (req, res) => {
   const name = req.body.name;
   const email = req.body.username;
   const password = req.body.password;
@@ -60,8 +62,8 @@ app.post("/register", async (req, res) => {
         "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3) RETURNING *",
         [email, password, name]
       );
+
       const user = result.rows[0];
-      const prices = await getCryptoPrices();
 
       res.render("secrets.ejs", {
         name: user.full_name,
@@ -80,11 +82,11 @@ app.post("/register", async (req, res) => {
         ethAddress: null,
         bnbAmount: null,
         bnbAddress: null,
-        prices
+        prices: await getCryptoPrices()
       });
     }
   } catch (err) {
-    console.error("Register route error:", err);
+    console.error("❌ REGISTER ERROR:", err); // This is key
     res.status(500).send("Server error.");
   }
 });
