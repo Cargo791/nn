@@ -43,44 +43,41 @@ app.post("/register", async (req, res) => {
   const password = req.body.password;
 
   try {
-    const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
+    const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [email]);
 
     if (checkResult.rows.length > 0) {
       res.send("Email already exists. Try logging in.");
     } else {
       const result = await db.query(
-        "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3) RETURNING",
+        "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3) RETURNING *",
         [email, password, name]
       );
-      const user = result.full_name;
-      const prices = await getCryptoPrices()
-      console.log(result);
-      res.render("secrets.ejs", { 
-        name,
-         email: email,
-        balance: user.balance;
-           paymentStatus: 'none',
-           btc:user.btc_balance,
-           sol:user.sol_balance,
-           eth:user.eth_balance,
-           bnb:user.bnb_balance,
-           btcAmount: null,
-           btcAddress: null,
-           solAmount: null, 
-           solAddress: null,
-           ethAmount: null,
-           ethAddress: null,
-           bnbAmount: null,
-           bnbAddress: null,
-          prices
-        
-       });
+      const user = result.rows[0];
+      const prices = await getCryptoPrices();
+
+      res.render("secrets.ejs", {
+        name: user.full_name,
+        email: user.email,
+        balance: user.balance || 0,
+        paymentStatus: 'none',
+        btc: user.btc_balance || 0,
+        sol: user.sol_balance || 0,
+        eth: user.eth_balance || 0,
+        bnb: user.bnb_balance || 0,
+        btcAmount: null,
+        btcAddress: null,
+        solAmount: null,
+        solAddress: null,
+        ethAmount: null,
+        ethAddress: null,
+        bnbAmount: null,
+        bnbAddress: null,
+        prices
+      });
     }
   } catch (err) {
-    console.log(err);
-    
+    console.error("Register route error:", err);
+    res.status(500).send("Server error.");
   }
 });
 
