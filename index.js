@@ -51,6 +51,8 @@ app.get("/register", (req, res) => {
   const email = req.body.username;
   const password = req.body.password;
 
+    console.log("Registering user with:", { name, email, password });
+
   try {
     const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [email]);
 
