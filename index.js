@@ -46,49 +46,57 @@ app.get("/register", (req, res) => {
 
 
 
-  app.post("/register", async (req, res) => {
+  
+
+     
+      app.post("/register", async (req, res) => {
   const name = req.body.name;
   const email = req.body.username;
   const password = req.body.password;
 
-    console.log("Registering user with:", { name, email, password });
+  console.log("➡️ Register attempt:", { name, email, password });
 
   try {
+    console.log("🔍 Checking if user exists...");
     const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+    console.log("✅ Check complete:", checkResult.rows.length);
 
     if (checkResult.rows.length > 0) {
-      res.send("Email already exists. Try logging in.");
-    } else {
-      const result = await db.query(
-        "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3) RETURNING *",
-        [email, password, name]
-      );
-
-      const user = result.rows[0];
-
-      res.render("secrets.ejs", {
-        name: user.full_name,
-        email: user.email,
-        balance: user.balance || 0,
-        paymentStatus: 'none',
-        btc: user.btc_balance || 0,
-        sol: user.sol_balance || 0,
-        eth: user.eth_balance || 0,
-        bnb: user.bnb_balance || 0,
-        btcAmount: null,
-        btcAddress: null,
-        solAmount: null,
-        solAddress: null,
-        ethAmount: null,
-        ethAddress: null,
-        bnbAmount: null,
-        bnbAddress: null,
-        prices: await getCryptoPrices()
-      });
+      return res.send("Email already exists. Try logging in.");
     }
+
+    console.log("📝 Inserting new user...");
+    const result = await db.query(
+      "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3) RETURNING *",
+      [email, password, name]
+    );
+    const user = result.rows[0];
+
+    console.log("✅ Inserted user:", user);
+
+    res.render("secrets.ejs", {
+      name: user.full_name,
+      email: user.email,
+      balance: user.balance || 0,
+      paymentStatus: 'none',
+      btc: user.btc_balance || 0,
+      sol: user.sol_balance || 0,
+      eth: user.eth_balance || 0,
+      bnb: user.bnb_balance || 0,
+      btcAmount: null,
+      btcAddress: null,
+      solAmount: null,
+      solAddress: null,
+      ethAmount: null,
+      ethAddress: null,
+      bnbAmount: null,
+      bnbAddress: null,
+      prices: await getCryptoPrices()
+    });
+
   } catch (err) {
-    console.error("❌ REGISTER ERROR:", err); // This is key
-    res.status(500).send("Server error.");
+    console.error("❌ REGISTER ERROR:", err.stack);
+    res.status(500).send("Server error: " + err.message);
   }
 });
 
