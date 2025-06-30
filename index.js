@@ -51,13 +51,16 @@ app.post("/register", async (req, res) => {
       res.send("Email already exists. Try logging in.");
     } else {
       const result = await db.query(
-        "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3)",
+        "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3) RETURNING",
         [email, password, name]
       );
+      const user = result.full_name;
+      const prices = await getCryptoPrices()
       console.log(result);
       res.render("secrets.ejs", { 
         name,
          email: email,
+        balance: user.balance;
            paymentStatus: 'none',
            btc:user.btc_balance,
            sol:user.sol_balance,
@@ -320,6 +323,6 @@ app.post("/withdraw", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
