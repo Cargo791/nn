@@ -2,6 +2,8 @@ import express from "express";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
 import path from "path"
+import pg from 'pg';
+import { parse } from 'pg-connection-string';
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 dotenv.config();
@@ -13,8 +15,6 @@ const __filename = fileURLToPath (import.meta.url)
 const __dirname = path.dirname(__filename)
 //const prices = await getCryptoPrices()
 
-const pg = require('pg');
-const { parse } = require('pg-connection-string');
 
 // Parse the connection string manually
 const config = parse(process.env.DATABASE_URL);
