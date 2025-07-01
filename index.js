@@ -5,9 +5,9 @@ import path from "path"
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import pg from "pg";
-const { client } = pg;
 dotenv.config();
 
+const { client } = pg;
 const app = express();
 app.set("view engine", "ejs")
 const port = process.env.PORT || 3000
