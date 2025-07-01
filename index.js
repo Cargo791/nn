@@ -51,7 +51,7 @@ app.get("/register", (req, res) => {
      
       app.post("/register", async (req, res) => {
   const name = req.body.name;
-  const email = req.body.username;
+  const email = req.body.email;
   const password = req.body.password;
 
   console.log("➡️ Register attempt:", { name, email, password });
