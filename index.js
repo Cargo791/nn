@@ -18,7 +18,6 @@ const __dirname = path.dirname(__filename)
 
 
 // Force IPv4
-const { Client } = require('pg');
 
 const db = new Client({
   connectionString: process.env.DATABASE_URL,
