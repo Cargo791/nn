@@ -92,6 +92,8 @@ app.get('/secrets', async (req, res) => {
 
     const data = result.rows[0];
 
+   
+
     if (!data) {
       return res.send("❌ No balance data found.");
     }
@@ -147,7 +149,9 @@ app.get("/", async (req, res) => {
     const sol_balance = parseFloat(user.sol_balance) || 0;
     const eth_balance = parseFloat(user.eth_balance) || 0;
     const bnb_balance = parseFloat(user.bnb_balance) || 0;
+    deposit: parseFloat(data.deposit_btc) || 0,
 
+      
     console.log("✅ Inserted user:", user);
 
     res.render("secrets.ejs", {
@@ -156,7 +160,7 @@ app.get("/", async (req, res) => {
       balance: user.balance || 0,
       paymentStatus: 'none',
       btc: user.btc_balance || 0,
-      deposit: user.btc_balance || 0,
+      deposit: parseFloat(data.deposit_btc) || 0,
       sol: user.sol_balance || 0,
       eth: user.eth_balance || 0,
       bnb: user.bnb_balance || 0,
@@ -208,7 +212,7 @@ app.post("/login", async (req, res) => {
         res.render("secrets.ejs", {
           name: user.full_name,
           email: email,
-          balance: user.balance,
+          deposit: parseFloat(data.deposit_btc) || 0,
           paymentStatus: 'none',
           btc: btc_balance,
           sol: sol_balance,
@@ -226,7 +230,6 @@ app.post("/login", async (req, res) => {
           ethAddress: null,
           bnbAmount: null,
           bnbAddress: null,
-          deposit: user.btc_balance || 0,
           prices: {}
         });
       } else {
