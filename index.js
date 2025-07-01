@@ -472,12 +472,12 @@ const transporter = nodemailer.createTransport({
   }
 });
 app.post('/submit-transaction', async (req, res) => {
-  const { email, coin_type, amount, type, package, receipt_url } = req.body;
+  const { email, coin_type, amount, type, pkg, receipt_url } = req.body;
 
   try {
     await db.query(
       'INSERT INTO transactions (email, coin_type, amount, type, package, status, receipt_url) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [email, coin_type, amount, type, package, 'processing', receipt_url]
+      [email, coin_type, amount, type, pkg, 'processing', receipt_url]
     );
 
     res.send('✅ Transaction submitted successfully.');
