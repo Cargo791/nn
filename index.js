@@ -60,7 +60,8 @@ app.get("/login", (req, res) => {
 app.get("/register", (req, res) => {
   res.render("register.ejs");
 });
-if (!req.session.user_email) return res.redirect("/login");
+
+
 // GET reset password page
 app.get("/forgot-password", (req, res) => {
   res.render("forgot-password"); // forgot-password.ejs
@@ -69,6 +70,7 @@ app.get("/forgot-password", (req, res) => {
 
 app.get('/secrets', async (req, res) => {
   const userEmail = req.session.user_email; // make sure you're storing the email in session
+  if (!req.session.user_email) return res.redirect("/login");
 
   if (!userEmail) {
     return res.redirect('/login');
