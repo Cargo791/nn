@@ -419,12 +419,12 @@ app.post("/withdraw", async (req, res) => {
 });
 
 app.post('/deposit', async (req, res) => {
-  const { coin, amount, package } = req.body;
+  const { coin, amount, pkg } = req.body;
   const email = req.session.user_email;
 
   try {
     await db.query(
-      'INSERT INTO deposits (email, coin, amount, package, status) VALUES ($1, $2, $3, $4, $5)',
+      'INSERT INTO deposits (email, coin, amount, pkg, status) VALUES ($1, $2, $3, $4, $5)',
       [email, coin, amount, package, 'processing']
     );
 
