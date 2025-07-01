@@ -425,7 +425,7 @@ app.post('/deposit', async (req, res) => {
   try {
     await db.query(
       'INSERT INTO deposits (email, coin, amount, pkg, status) VALUES ($1, $2, $3, $4, $5)',
-      [email, coin, amount, package, 'processing']
+      [email, coin, amount, pkg, 'processing']
     );
 
     res.redirect('/secrets');
