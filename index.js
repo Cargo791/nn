@@ -25,11 +25,11 @@ const db = new Pool({
   },
   family: 4,
 });
-db.connect((err) => {
+db.query('SELECT NOW()', (err, res) => {
   if (err) {
     console.error("❌ Failed to connect to database:", err.stack);
   } else {
-    console.log("✅ Connected to database");
+    console.log("✅ Connected to database at:", res.rows[0].now);
   }
 });
 
