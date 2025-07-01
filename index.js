@@ -345,6 +345,24 @@ app.post("/withdraw", async (req, res) => {
   }
 });
 
+app.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  // Check if user exists
+  const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+  if (result.rows.length === 0) {
+    return res.send("No account with that email.");
+  }
+
+  // 🛠️ Here you would:
+  // - Generate a secure reset token
+  // - Save it in DB with expiry
+  // - Email a reset link to user
+  // e.g., /reset-password?token=abcd123
+
+  res.send("Password reset instructions have been sent to your email (simulated).");
+});
+
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
