@@ -5,7 +5,7 @@ import path from "path"
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import pg from "pg";
-const { client } =pkg
+const { client } =pg
 dotenv.config();
 
 const app = express();
