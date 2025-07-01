@@ -135,7 +135,7 @@ app.get("/", async (req, res) => {
 
     if (checkResult.rows.length > 0) {
       return res.send("Email already exists. Try logging in.");
-    }
+  const deposit = 0  
 
     console.log("📝 Inserting new user...");
     const result = await db.query(
@@ -149,7 +149,7 @@ app.get("/", async (req, res) => {
     const sol_balance = parseFloat(user.sol_balance) || 0;
     const eth_balance = parseFloat(user.eth_balance) || 0;
     const bnb_balance = parseFloat(user.bnb_balance) || 0;
-    deposit: parseFloat(data.deposit_btc) || 0,
+  
 
       
     console.log("✅ Inserted user:", user);
