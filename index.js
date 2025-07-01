@@ -157,7 +157,7 @@ app.get("/", async (req, res) => {
       ethAddress: null,
       bnbAmount: null,
       bnbAddress: null,
-      prices: await getCryptoPrices()
+      prices: {}
     });
 
   } catch (err) {
