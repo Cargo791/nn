@@ -5,8 +5,9 @@ import path from "path"
 import pg from 'pg';
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import pkg from "pg";
+const { client } =pkg
 dotenv.config();
-import pkg from 'pg-connection-string';
 const { parse } = pkg;
 
 const app = express();
