@@ -17,16 +17,16 @@ const __dirname = path.dirname(__filename)
 //const prices = await getCryptoPrices()
 
 
-// Parse the connection string manually
-const config = parse(process.env.DATABASE_URL);
-
 // Force IPv4
-config.ssl = {
-  rejectUnauthorized: false,
-};
-config.family = 4;
+const { Client } = require('pg');
 
-const db = new pg.Client(config);
+const db = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  },
+  family: 4  // Optional: only if needed
+});
 
 db.connect((err) => {
   if (err) {
