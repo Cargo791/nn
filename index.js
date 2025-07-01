@@ -461,13 +461,6 @@ app.post("/forgot-password", async (req, res) => {
   res.send("Password reset instructions have been sent to your email (simulated).");
 });
 
-// Set storage for uploaded files
-const storage = multer.diskStorage({
-  destination: './uploads/', // Make sure this folder exists
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname)); // e.g., 162548939.png
-  }
-});
 
 
 
