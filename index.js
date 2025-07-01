@@ -56,8 +56,10 @@ app.get("/forgot-password", (req, res) => {
   const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
+  const country = req.body.country;
+  const phone = req.body.phone;
 
-  console.log("➡️ Register attempt:", { name, email, password });
+  console.log("➡️ Register attempt:", { name, email, password, phone, country });
 
   try {
     console.log("🔍 Checking if user exists...");
