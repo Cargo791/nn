@@ -7,7 +7,6 @@ import dotenv from "dotenv";
 import pg from "pg";
 dotenv.config();
 
-const { Client } = pg;
 const app = express();
 app.set("view engine", "ejs")
 const port = process.env.PORT || 3000
@@ -17,15 +16,15 @@ const __dirname = path.dirname(__filename)
 
 
 // Force IPv4
+const { Pool } = pg;
 
-const db = new Client({
+const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
   },
-  family: 4  // Optional: only if needed
+  family: 4,
 });
-
 db.connect((err) => {
   if (err) {
     console.error("❌ Failed to connect to database:", err.stack);
