@@ -146,6 +146,7 @@ app.get("/", async (req, res) => {
       balance: user.balance || 0,
       paymentStatus: 'none',
       btc: user.btc_balance || 0,
+      deposit: user.btc_balance || 0,
       sol: user.sol_balance || 0,
       eth: user.eth_balance || 0,
       bnb: user.bnb_balance || 0,
@@ -202,7 +203,8 @@ app.post("/login", async (req, res) => {
           ethAddress: null,
           bnbAmount: null,
           bnbAddress: null,
-          prices: prices
+          deposit: user.btc_balance || 0,
+          prices: {}
         });
       } else {
         console.log("❌ Incorrect password");
