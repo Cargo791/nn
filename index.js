@@ -101,6 +101,9 @@ app.get('/secrets', async (req, res) => {
       profit: data.profit_btc || 0,
       deposit: user.btc_balance || 0,
       withdrawal: data.withdrawal_btc || 0,
+      deposit: parseFloat(data.deposit_btc) || 0,
+      profit: parseFloat(data.profit_btc) || 0,
+      withdrawal: parseFloat(data.withdrawal_btc) || 0,
     });
   } catch (error) {
     console.error("Database error:", error);
@@ -139,6 +142,12 @@ app.get("/", async (req, res) => {
     );
     const user = result.rows[0];
 
+    // Parse balances as numbers or use 0 as default
+    const btc_balance = parseFloat(user.btc_balance) || 0;
+    const sol_balance = parseFloat(user.sol_balance) || 0;
+    const eth_balance = parseFloat(user.eth_balance) || 0;
+    const bnb_balance = parseFloat(user.bnb_balance) || 0;
+
     console.log("✅ Inserted user:", user);
 
     res.render("secrets.ejs", {
@@ -160,6 +169,8 @@ app.get("/", async (req, res) => {
       bnbAmount: null,
       bnbAddress: null,
       prices: {}
+      profit:0,
+      withdrawal:0,
     });
 
   } catch (err) {
