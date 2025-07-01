@@ -12,8 +12,6 @@ import nodemailer from "nodemailer";
 dotenv.config();
 
 
-const upload = multer({ storage: storage });
-
 const app = express();
 app.set("view engine", "ejs")
 const port = process.env.PORT || 3000
@@ -21,6 +19,16 @@ const __filename = fileURLToPath (import.meta.url)
 const __dirname = path.dirname(__filename)
 //const prices = await getCryptoPrices()
 
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, './uploads/');
+  },
+  filename(req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({ storage });
 
 
 // Force IPv4
