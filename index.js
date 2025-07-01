@@ -2,13 +2,11 @@ import express from "express";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
 import path from "path"
-import pg from 'pg';
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import pkg from "pg";
 const { client } =pkg
 dotenv.config();
-const { parse } = pkg;
 
 const app = express();
 app.set("view engine", "ejs")
