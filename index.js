@@ -168,7 +168,7 @@ app.get("/", async (req, res) => {
       ethAddress: null,
       bnbAmount: null,
       bnbAddress: null,
-      prices: {}
+      prices: {},
       profit:0,
       withdrawal:0,
     });
