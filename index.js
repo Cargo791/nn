@@ -238,31 +238,18 @@ app.post("/start-bnb-payment", async (req, res) => {
 });
 
 
-app.post("/start-eth-payment", async (req, res) => {
+app.post("/start-eth-payment", (req, res) => {
   const { email, amount } = req.body;
+  console.log("Form Data:", email, amount);
 
-  try {
-    // Update user status to 'processing'
-    await db.query(
-      "UPDATE users SET payment_status = 'processing' WHERE email = $1",
-      [email]
-    );
-
-    const user = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-
-    res.render("secrets.ejs", {
-      name: user.rows[0].full_name,
-      email: user.rows[0].email,
-      balance: user.rows[0].balance,
-      paymentStatus: 'processing',
-      ethAmount: amount,
-      ethAddress: "0x497785495154a4D919Cd0aA047Fc23a778bd6337"
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.send("Error starting ETH payment.");
-  }
+  res.render("secrets.ejs", {
+    name: "Test User",
+    email,
+    balance: "0",
+    paymentStatus: "processing",
+    ethAmount: amount,
+    ethAddress: "0x497785495154a4D919Cd0aA047Fc23a778bd6337",
+  });
 });
 
 app.post("/approve-payment", async (req, res) => {
