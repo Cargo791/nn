@@ -1,11 +1,18 @@
 import express from "express";
+import session from "express-session";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
-import path from "path"
+import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import pg from "pg";
+import multer from "multer";
+import nodemailer from "nodemailer";
+
 dotenv.config();
+
+
+const upload = multer({ storage: storage });
 
 const app = express();
 app.set("view engine", "ejs")
@@ -13,6 +20,7 @@ const port = process.env.PORT || 3000
 const __filename = fileURLToPath (import.meta.url)
 const __dirname = path.dirname(__filename)
 //const prices = await getCryptoPrices()
+
 
 
 // Force IPv4
@@ -33,6 +41,14 @@ db.query("SELECT NOW()")
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
+app.use(session({
+  secret: process.env.SESSION_SECRET || "your-secret",
+  resave: false,
+  saveUninitialized: true,
+}));
+
+
+
 app.get("/", (req, res) => {
   res.render("home.ejs");
 });
@@ -44,16 +60,50 @@ app.get("/login", (req, res) => {
 app.get("/register", (req, res) => {
   res.render("register.ejs");
 });
-
+if (!req.session.user_email) return res.redirect("/login");
 // GET reset password page
 app.get("/forgot-password", (req, res) => {
   res.render("forgot-password"); // forgot-password.ejs
 });
 
-  
 
+app.get('/secrets', async (req, res) => {
+  const userEmail = req.session.user_email; // make sure you're storing the email in session
+
+  if (!userEmail) {
+    return res.redirect('/login');
+  }
+
+  try {
+    const result = await db.query(
+      'SELECT deposit_btc, profit_btc, withdrawal_btc FROM user_balances WHERE email = $1',
+      [userEmail]
+    );
+
+    const data = result.rows[0];
+
+    if (!data) {
+      return res.send("❌ No balance data found.");
+    }
+
+    res.render('secrets', {
+      deposit: data.deposit_btc || 0,
+      profit: data.profit_btc || 0,
+      withdrawal: data.withdrawal_btc || 0,
+    });
+  } catch (error) {
+    console.error("Database error:", error);
+    res.send("❌ Failed to fetch balance.");
+  }
+});
+
+
+app.get("/", async (req, res) => {
+  const prices = await getCryptoPrices();
+  res.render("secrets.ejs", { prices });
+});
      
-      app.post("/register", async (req, res) => {
+  app.post("/register", async (req, res) => {
   const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
@@ -121,6 +171,7 @@ app.post("/login", async (req, res) => {
       const storedPassword = user.password;
 
       if (password === storedPassword) {
+        req.session.user_email = email;
         const prices = await getCryptoPrices();
         console.log("✅ Login success, rendering secrets page");
 
@@ -154,6 +205,33 @@ app.post("/login", async (req, res) => {
   } catch (err) {
     console.error("❌ LOGIN ERROR:", err);
     res.status(500).send("Server error: " + err.message);
+  }
+});
+
+app.post('/upload-receipt', upload.single('receipt'), async (req, res) => {
+  if (!req.file) {
+    return res.send('❌ No file uploaded.');
+  }
+
+  const mailOptions = {
+    from: process.env.EMAIL_USERNAME,
+    to: 'growwvest@gmail.com', // replace with your email
+    subject: '🧾 New Payment Receipt Uploaded',
+    text: 'A user has submitted a payment receipt.',
+    attachments: [
+      {
+        filename: req.file.filename,
+        path: req.file.path
+      }
+    ]
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.send('✅ Receipt uploaded and email sent successfully!');
+  } catch (err) {
+    console.error(err);
+    res.send('❌ Failed to send email.');
   }
 });
 
@@ -338,6 +416,23 @@ app.post("/withdraw", async (req, res) => {
   }
 });
 
+app.post('/deposit', async (req, res) => {
+  const { coin, amount, package } = req.body;
+  const email = req.session.user_email;
+
+  try {
+    await db.query(
+      'INSERT INTO deposits (email, coin, amount, package, status) VALUES ($1, $2, $3, $4, $5)',
+      [email, coin, amount, package, 'processing']
+    );
+
+    res.redirect('/secrets');
+  } catch (err) {
+    console.error(err);
+    res.send('❌ Deposit failed');
+  }
+});
+
 app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
@@ -356,6 +451,49 @@ app.post("/forgot-password", async (req, res) => {
   res.send("Password reset instructions have been sent to your email (simulated).");
 });
 
+// Set storage for uploaded files
+const storage = multer.diskStorage({
+  destination: './uploads/', // Make sure this folder exists
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname)); // e.g., 162548939.png
+  }
+});
+
+
+
+// Set up Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USERNAME,  // from .env
+    pass: process.env.EMAIL_PASSWORD   // from .env
+  }
+});
+app.post('/submit-transaction', async (req, res) => {
+  const { email, coin_type, amount, type, package, receipt_url } = req.body;
+
+  try {
+    await db.query(
+      'INSERT INTO transactions (email, coin_type, amount, type, package, status, receipt_url) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [email, coin_type, amount, type, package, 'processing', receipt_url]
+    );
+
+    res.send('✅ Transaction submitted successfully.');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('❌ Failed to submit transaction.');
+  }
+});
+app.get('/transaction-history', async (req, res) => {
+  const userEmail = req.session.email;
+
+  const result = await db.query(
+    'SELECT * FROM transactions WHERE email = $1 ORDER BY created_at DESC',
+    [userEmail]
+  );
+
+  res.render('transaction-history', { transactions: result.rows });
+});
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
