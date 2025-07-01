@@ -44,7 +44,10 @@ app.get("/register", (req, res) => {
   res.render("register.ejs");
 });
 
-
+// GET reset password page
+app.get("/forgot-password", (req, res) => {
+  res.render("forgot-password"); // forgot-password.ejs
+});
 
   
 
