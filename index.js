@@ -25,13 +25,9 @@ const db = new Pool({
   },
   family: 4,
 });
-db.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error("❌ Failed to connect to database:", err.stack);
-  } else {
-    console.log("✅ Connected to database at:", res.rows[0].now);
-  }
-});
+db.query("SELECT NOW()")
+  .then(() => console.log("✅ Connected to database"))
+  .catch(err => console.error("❌ Failed to connect to database:", err.stack));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
