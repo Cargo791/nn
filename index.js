@@ -135,7 +135,7 @@ app.get("/", async (req, res) => {
 
     if (checkResult.rows.length > 0) {
       return res.send("Email already exists. Try logging in.");
-  const deposit = 0  
+
 
     console.log("📝 Inserting new user...");
     const result = await db.query(
@@ -143,7 +143,7 @@ app.get("/", async (req, res) => {
       [email, password, name]
     );
     const user = result.rows[0];
-
+    const deposit = 0  
     // Parse balances as numbers or use 0 as default
     const btc_balance = parseFloat(user.btc_balance) || 0;
     const sol_balance = parseFloat(user.sol_balance) || 0;
