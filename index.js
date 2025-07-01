@@ -198,12 +198,23 @@ app.post("/login", async (req, res) => {
         const prices = await getCryptoPrices();
         console.log("✅ Login success, rendering secrets page");
 
+        
+    // Parse balances as numbers or use 0 as default
+    const btc_balance = parseFloat(user.btc_balance) || 0;
+    const sol_balance = parseFloat(user.sol_balance) || 0;
+    const eth_balance = parseFloat(user.eth_balance) || 0;
+    const bnb_balance = parseFloat(user.bnb_balance) || 0;
+
         res.render("secrets.ejs", {
           name: user.full_name,
           email: email,
           balance: user.balance,
           paymentStatus: 'none',
-          btc: user.btc_balance,
+          btc: btc_balance,
+          sol: sol_balance,
+          eth: eth_balance,
+          bnb: bnb_balance,
+           btc: user.btc_balance,
           sol: user.sol_balance,
           eth: user.eth_balance,
           bnb: user.bnb_balance,
