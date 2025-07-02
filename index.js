@@ -19,16 +19,11 @@ const __filename = fileURLToPath (import.meta.url)
 const __dirname = path.dirname(__filename)
 //const prices = await getCryptoPrices()
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, './uploads/');
-  },
-  filename(req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
 
-const upload = multer({ storage });
+
+const upload = multer();
+
+
 
 
 // Force IPv4
@@ -243,6 +238,7 @@ app.post("/login", async (req, res) => {
     res.status(500).send("Server error: " + err.message);
   }
 });
+
 app.post('/upload-receipt', upload.single('receipt'), async (req, res) => {
   if (!req.file) {
     return res.send('❌ No file uploaded.');
@@ -255,8 +251,9 @@ app.post('/upload-receipt', upload.single('receipt'), async (req, res) => {
     text: 'A user has submitted a payment receipt.',
     attachments: [
       {
-        filename: req.file.filename,
-        path: req.file.path
+        filename: req.file.originalname,
+        content: req.file.buffer.toString("base64"),
+        encoding: "base64",
       }
     ]
   };
@@ -265,8 +262,8 @@ app.post('/upload-receipt', upload.single('receipt'), async (req, res) => {
     await transporter.sendMail(mailOptions);
     res.send('✅ Receipt uploaded and email sent successfully!');
   } catch (err) {
-    console.error(err);
-    res.send('❌ Failed to send email.');
+    console.error("❌ Email sending failed:", err);
+    res.status(500).send('❌ Failed to send email: ' + err.message);
   }
 });
 
