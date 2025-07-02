@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import pg from "pg";
 import multer from "multer";
 import nodemailer from "nodemailer";
+import axios from "axios"
 
 dotenv.config();
 
@@ -389,10 +390,16 @@ app.post("/approve-payment", async (req, res) => {
 });
 
 
-async function getCryptoPrices() {
+ export async function getCryptoPrices() {
   try {
-    const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin&vs_currencies=usd");
-    const data = await response.json();
+    const response = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
+      params: {
+        ids: "bitcoin,ethereum,solana,binancecoin",
+        vs_currencies: "usd"
+      }
+    });
+
+    const data = response.data;
 
     return {
       btc: data.bitcoin?.usd || 0,
