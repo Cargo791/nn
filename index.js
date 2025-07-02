@@ -72,7 +72,6 @@ app.get("/forgot-password", (req, res) => {
 });
 
 
-
 app.get('/secrets', async (req, res) => {
   const userEmail = req.session.user_email;
 
@@ -101,30 +100,27 @@ app.get('/secrets', async (req, res) => {
 
     const prices = await getCryptoPrices();
 
+    // Use user fields for deposit, profit, withdrawal or set 0 as fallback
     res.render('secrets', {
       name: user.full_name,
       email: user.email,
       balance: user.balance || 0,
       paymentStatus: user.payment_status || 'none',
       btc: btc,
+      eth: eth,
       sol: sol,
       bnb: bnb,
-      transaction: transactions,
-      deposit: data.deposit_btc || 0,
-      profit: data.profit_btc || 0,
-      deposit: user.btc_balance || 0,
-      withdrawal: data.withdrawal_btc || 0,
-      deposit: parseFloat(data.deposit_btc) || 0,
-      profit: parseFloat(data.profit_btc) || 0,
-      withdrawal: parseFloat(data.withdrawal_btc) || 0,
+      transactions: transactions,  // plural here, to match your ejs
+      deposit: parseFloat(user.deposit_btc) || 0,
+      profit: parseFloat(user.profit_btc) || 0,
+      withdrawal: parseFloat(user.withdrawal_btc) || 0,
+      prices: prices
     });
   } catch (error) {
     console.error("Database error:", error);
     res.send("❌ Failed to fetch balance.");
   }
 });
-
-
 app.get("/", async (req, res) => {
   const prices = await getCryptoPrices();
   res.render("secrets.ejs", { prices });
