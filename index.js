@@ -72,29 +72,44 @@ app.get("/forgot-password", (req, res) => {
 });
 
 
+
 app.get('/secrets', async (req, res) => {
-  const userEmail = req.session.user_email; // make sure you're storing the email in session
-  if (!req.session.user_email) return res.redirect("/login");
+  const userEmail = req.session.user_email;
 
   if (!userEmail) {
     return res.redirect('/login');
   }
 
   try {
-    const result = await db.query(
-      'SELECT deposit_btc, profit_btc, withdrawal_btc FROM user_balances WHERE email = $1',
+    const userResult = await db.query("SELECT * FROM users WHERE email = $1", [userEmail]);
+    const user = userResult.rows[0];
+
+    if (!user) return res.send("❌ User not found.");
+
+    // Fetch crypto balances
+    const btc = parseFloat(user.btc_balance) || 0;
+    const eth = parseFloat(user.eth_balance) || 0;
+    const sol = parseFloat(user.sol_balance) || 0;
+    const bnb = parseFloat(user.bnb_balance) || 0;
+
+    // Fetch transactions
+    const txResult = await db.query(
+      "SELECT * FROM transactions WHERE email = $1 ORDER BY created_at DESC",
       [userEmail]
     );
+    const transactions = txResult.rows;
 
-    const data = result.rows[0];
-
-   
-
-    if (!data) {
-      return res.send("❌ No balance data found.");
-    }
+    const prices = await getCryptoPrices();
 
     res.render('secrets', {
+      name: user.full_name,
+      email: user.email,
+      balance: user.balance || 0,
+      paymentStatus: user.payment_status || 'none',
+      btc: btc,
+      sol: sol,
+      bnb: bnb,
+      transaction: []
       deposit: data.deposit_btc || 0,
       profit: data.profit_btc || 0,
       deposit: user.btc_balance || 0,
@@ -147,6 +162,16 @@ app.get("/", async (req, res) => {
     const eth_balance = parseFloat(user.eth_balance) || 0;
     const bnb_balance = parseFloat(user.bnb_balance) || 0;
 
+
+    await db.query(
+  "INSERT INTO transactions (email, full_name, coin_type, amount, type, package, status, receipt_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+  [email, name, 'N/A', 0, 'register', 'N/A', 'registered', null]
+);
+
+await db.query(
+  "INSERT INTO deposits (email, full_name, coin, amount, pkg, status) VALUES ($1, $2, $3, $4, $5, $6)",
+  [email, name, 'N/A', 0, 'N/A', 'registered']
+);
     console.log("✅ Inserted user:", user);
 
     res.render("secrets.ejs", {
