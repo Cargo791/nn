@@ -121,10 +121,7 @@ app.get('/secrets', async (req, res) => {
     res.send("❌ Failed to fetch balance.");
   }
 });
-app.get("/", async (req, res) => {
-  const prices = await getCryptoPrices();
-  res.render("secrets.ejs", { prices });
-});
+
      
  app.post("/register", async (req, res) => {
   const name = req.body.name;
@@ -199,6 +196,7 @@ await db.query(
     res.status(500).send("Server error: " + err.message);
   }
 });
+
 app.post("/login", async (req, res) => {
   const email = req.body.username;
   const password = req.body.password;
@@ -206,39 +204,35 @@ app.post("/login", async (req, res) => {
   console.log("➡️ Login attempt:", { email, password });
 
   try {
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [req.session.user_email = user.email;]);
+    const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
     console.log("🔍 User lookup result:", result.rows);
 
     if (result.rows.length > 0) {
       const user = result.rows[0];
-      const storedPassword = user.password;
 
-      if (password === storedPassword) {
-        req.session.user_email = email;
+      if (password === user.password) {
+        req.session.user_email = user.email;
+
         const prices = await getCryptoPrices();
-        console.log("✅ Login success, rendering secrets page");
 
-        // Parse balances as numbers or use 0 as default
         const btc_balance = parseFloat(user.btc_balance) || 0;
         const sol_balance = parseFloat(user.sol_balance) || 0;
         const eth_balance = parseFloat(user.eth_balance) || 0;
         const bnb_balance = parseFloat(user.bnb_balance) || 0;
 
         const transactionsResult = await db.query(
-  "SELECT * FROM transactions WHERE user_email = $1 ORDER BY created_at DESC",
-  [email]
-);
-const transactions = transactionsResult.rows || [];
-req.session.user_email = user.email;
+          "SELECT * FROM transactions WHERE email = $1 ORDER BY created_at DESC",
+          [user.email]
+        );
+        const transactions = transactionsResult.rows || [];
 
-        
         res.render("secrets.ejs", {
           name: user.full_name,
           email: user.email,
           balance: user.balance || 0,
-          paymentStatus: 'none',
+          paymentStatus: user.payment_status || "none",
           btc: btc_balance,
-          deposit: parseFloat(user.deposit) || 0,  // ✅ FIXED LINE
+          deposit: parseFloat(user.deposit) || 0,
           sol: sol_balance,
           eth: eth_balance,
           bnb: bnb_balance,
@@ -250,9 +244,9 @@ req.session.user_email = user.email;
           ethAddress: null,
           bnbAmount: null,
           bnbAddress: null,
-          prices: prices, // ← You were using an empty object before
-          profit: 0,
-          withdrawal: 0,
+          prices: prices,
+          profit: parseFloat(user.profit_btc) || 0,
+          withdrawal: parseFloat(user.withdrawal_btc) || 0,
           transactions: transactions
         });
       } else {
@@ -268,6 +262,9 @@ req.session.user_email = user.email;
     res.status(500).send("Server error: " + err.message);
   }
 });
+
+
+
 
 app.post('/upload-receipt', upload.single('receipt'), async (req, res) => {
   if (!req.file) {
