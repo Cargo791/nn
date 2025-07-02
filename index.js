@@ -195,7 +195,7 @@ await db.query(
       prices: {},
       profit: 0,
       withdrawal: 0,
-      transactions: []
+      transactions: transactions,
     });
 
   } catch (err) {
@@ -549,14 +549,23 @@ app.post('/submit-transaction', async (req, res) => {
   }
 });
 app.get('/transaction-history', async (req, res) => {
-  const userEmail = req.session.email;
+  const userEmail = req.session.user_email;
 
-  const result = await db.query(
-    'SELECT * FROM transactions WHERE email = $1 ORDER BY created_at DESC',
-    [userEmail]
-  );
+  if (!userEmail) {
+    return res.redirect('/login');
+  }
 
-  res.render('transaction-history', { transactions: result.rows });
+  try {
+    const result = await db.query(
+      'SELECT * FROM transactions WHERE email = $1 ORDER BY created_at DESC',
+      [userEmail]
+    );
+
+    res.render('transaction-history', { transactions: result.rows });
+  } catch (error) {
+    console.error("Database error:", error);
+    res.status(500).send("Server error");
+  }
 });
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
