@@ -206,7 +206,7 @@ app.post("/login", async (req, res) => {
   console.log("➡️ Login attempt:", { email, password });
 
   try {
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+    const result = await db.query("SELECT * FROM users WHERE email = $1", [req.session.user_email = user.email;]);
     console.log("🔍 User lookup result:", result.rows);
 
     if (result.rows.length > 0) {
