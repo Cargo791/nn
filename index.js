@@ -229,7 +229,9 @@ app.post("/login", async (req, res) => {
   [email]
 );
 const transactions = transactionsResult.rows || [];
+req.session.user_email = user.email;
 
+        
         res.render("secrets.ejs", {
           name: user.full_name,
           email: user.email,
