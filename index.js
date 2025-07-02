@@ -109,7 +109,7 @@ app.get('/secrets', async (req, res) => {
       btc: btc,
       sol: sol,
       bnb: bnb,
-      transaction: [],
+      transaction: transactions,
       deposit: data.deposit_btc || 0,
       profit: data.profit_btc || 0,
       deposit: user.btc_balance || 0,
@@ -228,6 +228,12 @@ app.post("/login", async (req, res) => {
         const eth_balance = parseFloat(user.eth_balance) || 0;
         const bnb_balance = parseFloat(user.bnb_balance) || 0;
 
+        const transactionsResult = await db.query(
+  "SELECT * FROM transactions WHERE user_email = $1 ORDER BY created_at DESC",
+  [email]
+);
+const transactions = transactionsResult.rows || [];
+
         res.render("secrets.ejs", {
           name: user.full_name,
           email: user.email,
@@ -249,7 +255,7 @@ app.post("/login", async (req, res) => {
           prices: prices, // ← You were using an empty object before
           profit: 0,
           withdrawal: 0,
-          transactions: []
+          transactions: transactions
         });
       } else {
         console.log("❌ Incorrect password");
