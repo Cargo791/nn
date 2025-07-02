@@ -201,35 +201,34 @@ app.post("/login", async (req, res) => {
         const prices = await getCryptoPrices();
         console.log("✅ Login success, rendering secrets page");
 
-        
-    // Parse balances as numbers or use 0 as default
-    const btc_balance = parseFloat(user.btc_balance) || 0;
-    const sol_balance = parseFloat(user.sol_balance) || 0;
-    const eth_balance = parseFloat(user.eth_balance) || 0;
-    const bnb_balance = parseFloat(user.bnb_balance) || 0;
+        // Parse balances as numbers or use 0 as default
+        const btc_balance = parseFloat(user.btc_balance) || 0;
+        const sol_balance = parseFloat(user.sol_balance) || 0;
+        const eth_balance = parseFloat(user.eth_balance) || 0;
+        const bnb_balance = parseFloat(user.bnb_balance) || 0;
 
         res.render("secrets.ejs", {
           name: user.full_name,
-      email: user.email,
-      balance: user.balance || 0,
-      paymentStatus: 'none',
-      btc: btc_balance,
-      deposit: deposit,
-      sol: sol_balance,
-      eth: eth_balance,
-      bnb: bnb_balance,
-      btcAmount: null,
-      btcAddress: null,
-      solAmount: null,
-      solAddress: null,
-      ethAmount: null,
-      ethAddress: null,
-      bnbAmount: null,
-      bnbAddress: null,
-      prices: {},
-      profit: 0,
-      withdrawal: 0,
-      transactions: []
+          email: user.email,
+          balance: user.balance || 0,
+          paymentStatus: 'none',
+          btc: btc_balance,
+          deposit: parseFloat(user.deposit) || 0,  // ✅ FIXED LINE
+          sol: sol_balance,
+          eth: eth_balance,
+          bnb: bnb_balance,
+          btcAmount: null,
+          btcAddress: null,
+          solAmount: null,
+          solAddress: null,
+          ethAmount: null,
+          ethAddress: null,
+          bnbAmount: null,
+          bnbAddress: null,
+          prices: prices, // ← You were using an empty object before
+          profit: 0,
+          withdrawal: 0,
+          transactions: []
         });
       } else {
         console.log("❌ Incorrect password");
@@ -244,7 +243,6 @@ app.post("/login", async (req, res) => {
     res.status(500).send("Server error: " + err.message);
   }
 });
-
 app.post('/upload-receipt', upload.single('receipt'), async (req, res) => {
   if (!req.file) {
     return res.send('❌ No file uploaded.');
