@@ -109,7 +109,7 @@ app.get('/secrets', async (req, res) => {
       btc: btc,
       sol: sol,
       bnb: bnb,
-      transaction: []
+      transaction: [],
       deposit: data.deposit_btc || 0,
       profit: data.profit_btc || 0,
       deposit: user.btc_balance || 0,
