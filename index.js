@@ -119,7 +119,7 @@ app.get("/", async (req, res) => {
   res.render("secrets.ejs", { prices });
 });
      
-  app.post("/register", async (req, res) => {
+ app.post("/register", async (req, res) => {
   const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
@@ -135,23 +135,22 @@ app.get("/", async (req, res) => {
 
     if (checkResult.rows.length > 0) {
       return res.send("Email already exists. Try logging in.");
-
+    } // ✅ ← THIS WAS MISSING
 
     console.log("📝 Inserting new user...");
     const result = await db.query(
       "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3) RETURNING *",
       [email, password, name]
     );
+
     const user = result.rows[0];
-    const deposit = 0  
-    // Parse balances as numbers or use 0 as default
+    const deposit = 0;
+
     const btc_balance = parseFloat(user.btc_balance) || 0;
     const sol_balance = parseFloat(user.sol_balance) || 0;
     const eth_balance = parseFloat(user.eth_balance) || 0;
     const bnb_balance = parseFloat(user.bnb_balance) || 0;
-  
 
-      
     console.log("✅ Inserted user:", user);
 
     res.render("secrets.ejs", {
@@ -159,11 +158,11 @@ app.get("/", async (req, res) => {
       email: user.email,
       balance: user.balance || 0,
       paymentStatus: 'none',
-      btc: user.btc_balance || 0,
-      deposit: 0,
-      sol: user.sol_balance || 0,
-      eth: user.eth_balance || 0,
-      bnb: user.bnb_balance || 0,
+      btc: btc_balance,
+      deposit: deposit,
+      sol: sol_balance,
+      eth: eth_balance,
+      bnb: bnb_balance,
       btcAmount: null,
       btcAddress: null,
       solAmount: null,
@@ -173,8 +172,8 @@ app.get("/", async (req, res) => {
       bnbAmount: null,
       bnbAddress: null,
       prices: {},
-      profit:0,
-      withdrawal:0,
+      profit: 0,
+      withdrawal: 0,
     });
 
   } catch (err) {
@@ -182,7 +181,6 @@ app.get("/", async (req, res) => {
     res.status(500).send("Server error: " + err.message);
   }
 });
-
 app.post("/login", async (req, res) => {
   const email = req.body.username;
   const password = req.body.password;
