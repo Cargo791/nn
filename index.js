@@ -174,6 +174,7 @@ app.get("/", async (req, res) => {
       prices: {},
       profit: 0,
       withdrawal: 0,
+      transaction: []
     });
 
   } catch (err) {
@@ -228,7 +229,8 @@ app.post("/login", async (req, res) => {
           ethAddress: null,
           bnbAmount: null,
           bnbAddress: null,
-          prices: {}
+          prices: {},
+           transaction: []
         });
       } else {
         console.log("❌ Incorrect password");
