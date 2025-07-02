@@ -160,7 +160,7 @@ app.get("/", async (req, res) => {
       balance: user.balance || 0,
       paymentStatus: 'none',
       btc: user.btc_balance || 0,
-      deposit: parseFloat(data.deposit_btc) || 0,
+      deposit: 0,
       sol: user.sol_balance || 0,
       eth: user.eth_balance || 0,
       bnb: user.bnb_balance || 0,
