@@ -393,11 +393,12 @@ async function getCryptoPrices() {
   try {
     const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin&vs_currencies=usd");
     const data = await response.json();
+
     return {
-      btc: data.bitcoin.usd,
-      eth: data.ethereum.usd,
-      sol: data.solana.usd,
-      bnb: data.binancecoin.usd
+      btc: data.bitcoin?.usd || 0,
+      eth: data.ethereum?.usd || 0,
+      sol: data.solana?.usd || 0,
+      bnb: data.binancecoin?.usd || 0
     };
   } catch (error) {
     console.error("Error fetching prices:", error);
