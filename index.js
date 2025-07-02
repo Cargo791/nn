@@ -191,7 +191,7 @@ await db.query(
       prices: {},
       profit: 0,
       withdrawal: 0,
-      transactions: transactions,
+      transactions: []
     });
 
   } catch (err) {
