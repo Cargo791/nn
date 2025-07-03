@@ -226,13 +226,19 @@ app.post("/login", async (req, res) => {
         );
         const transactions = transactionsResult.rows || [];
 
+        const depositResult = await db.query(
+  "SELECT COALESCE(SUM(amount), 0) as total FROM deposits WHERE email = $1",
+  [user.email]
+);
+const depositTotal = parseFloat(depositResult.rows[0].total) || 0;
+
         res.render("secrets.ejs", {
           name: user.full_name,
           email: user.email,
           balance: user.balance || 0,
           paymentStatus: user.payment_status || "none",
           btc: btc_balance,
-          deposit: parseFloat(user.deposit) || 0,
+          deposit: depositTotal,
           sol: sol_balance,
           eth: eth_balance,
           bnb: bnb_balance,
