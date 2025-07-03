@@ -1,4 +1,15 @@
+<script>
+  function toggleMenu() {
+    const dropdown = document.getElementById("dropdownContent");
+    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+  }
 
+  window.addEventListener("click", function (e) {
+    if (!e.target.closest('.dropdown')) {
+      document.getElementById("dropdownContent").style.display = "none";
+    }
+  });
+</script>
 
 </body>
 </html>
