@@ -99,7 +99,7 @@ app.get('/secrets', async (req, res) => {
     const transactions = txResult.rows;
 
     const prices = await getCryptoPrices();
-    console.log("DEBUG deposit_btc from DB:", user.deposit_btc);
+ 
     // Use user fields for deposit, profit, withdrawal or set 0 as fallback
     res.render('secrets', {
       name: user.full_name,
