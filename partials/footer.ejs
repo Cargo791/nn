@@ -1,12 +1,12 @@
 <script>
   function toggleMenu() {
-    const dropdown = document.getElementById("dropdownContent");
-    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    const dropdowns = document.getElementById("dropdownContents");
+    dropdown.style.display = dropdowns.style.display === "block" ? "none" : "block";
   }
 
   window.addEventListener("click", function (e) {
-    if (!e.target.closest('.dropdown')) {
-      document.getElementById("dropdownContent").style.display = "none";
+    if (!e.target.closest('.dropdowns')) {
+      document.getElementById("dropdownContents").style.display = "none";
     }
   });
 </script>
