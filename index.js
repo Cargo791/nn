@@ -158,7 +158,7 @@ app.get('/secrets', async (req, res) => {
 
     await db.query(
   "INSERT INTO transactions (email, full_name, coin_type, amount, type, package, status, receipt_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-  [email, name, 'N/A', 0, 'register', 'N/A', 'registered', null]
+  [email, name, 'N/A', 0, 'N/A', 'N/A', 'N/A', null]
 );
 
 await db.query(
