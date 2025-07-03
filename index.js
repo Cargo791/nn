@@ -562,6 +562,17 @@ app.get('/transaction-history', async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+
+app.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.log(err);
+      return res.redirect('/home'); // or home page
+    }
+    res.clearCookie('connect.sid'); // Optional: clears session cookie
+    res.redirect('/login'); // Or wherever your login page is
+  });
+});
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
