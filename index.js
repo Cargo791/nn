@@ -579,6 +579,40 @@ app.get('/logout', (req, res) => {
     res.redirect('/login'); // Or wherever your login page is
   });
 });
+
+app.post("/change-password", async (req, res) => {
+  const { newPassword, confirmPassword } = req.body;
+  const userEmail = req.session.user?.email;
+
+  if (!userEmail) return res.redirect("/login");
+
+  if (newPassword !== confirmPassword) {
+    return res.render("secrets", {
+      errorMessage: "Passwords do not match.",
+      successMessage: null,
+    });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await pool.query(
+      "UPDATE users SET password = $1 WHERE email = $2",
+      [hashedPassword, userEmail]
+    );
+
+    return res.render("secrets", {
+      successMessage: "Password updated successfully.",
+      errorMessage: null,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.render("secrets", {
+      errorMessage: "Error updating password.",
+      successMessage: null,
+    });
+  }
+});
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
