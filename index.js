@@ -437,7 +437,7 @@ app.get('/withdraw', async (req, res) => {
 
 app.post('/withdraw', async (req, res) => {
     const { coin_type, address } = req.body;
-    const email = req.session.email;
+    const email = req.session.user_email;
 
     try {
         // Count completed deposit transactions by email
