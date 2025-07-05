@@ -396,6 +396,48 @@ app.post("/start-eth-payment", (req, res) => {
   });
 });
 
+app.get('/withdraw', async (req, res) => {
+    if (!req.session.email) return res.redirect('/login');
+    res.render('withdraw', { message: null });
+});
+
+app.post('/withdraw', async (req, res) => {
+    const { coin_type, address } = req.body;
+    const email = req.session.email;
+
+    try {
+        // Count completed deposit transactions by email
+        const result = await pool.query(
+            'SELECT COUNT(*) FROM transactions WHERE email = $1 AND type = $2',
+            [email, 'deposit']
+        );
+
+        const txCount = parseInt(result.rows[0].count);
+
+        if (txCount < 2) {
+            return res.render('withdraw', {
+                message: `You need to complete at least 2 deposit transactions before withdrawing.`
+            });
+        }
+
+        // Record the withdrawal request
+        await pool.query(
+            'INSERT INTO transactions (email, type, coin_type, address, amount) VALUES ($1, $2, $3, $4, $5)',
+            [email, 'withdrawal', coin_type, address, 0] // Replace 0 with actual amount if needed
+        );
+
+        res.render('withdraw', {
+            message: 'Withdrawal request submitted successfully!'
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.render('withdraw', {
+            message: 'Something went wrong. Please try again.'
+        });
+    }
+});
+
 app.post("/approve-payment", async (req, res) => {
   const { email, amount } = req.body;
 
