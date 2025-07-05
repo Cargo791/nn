@@ -397,7 +397,7 @@ app.post("/start-eth-payment", (req, res) => {
 });
 
 app.get('/withdraw', async (req, res) => {
-    if (!req.session.email) return res.redirect('/login');
+    if (!req.session.user_email) return res.redirect('/login');
     res.render('withdraw', { message: null });
 });
 
@@ -407,7 +407,7 @@ app.post('/withdraw', async (req, res) => {
 
     try {
         // Count completed deposit transactions by email
-        const result = await pool.query(
+        const result = await db.query(
             'SELECT COUNT(*) FROM transactions WHERE email = $1 AND type = $2',
             [email, 'deposit']
         );
@@ -491,44 +491,6 @@ app.post("/approve-payment", async (req, res) => {
     };
   }
 }
-app.post("/withdraw", async (req, res) => {
-  const email = req.body.email;
-
-  try {
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-
-    if (result.rows.length > 0) {
-      const user = result.rows[0];
-      const prices = await getCryptoPrices();
-
-      res.render("secrets.ejs", {
-        name: user.full_name,
-        email: user.email,
-        balance: user.balance,
-        paymentStatus: user.payment_status,
-        btc: user.btc_balance,
-        sol: user.sol_balance,
-        eth: user.eth_balance,
-        bnb: user.bnb_balance,
-        btcAmount: null,
-        btcAddress: null,
-        solAmount: null,
-        solAddress: null,
-        ethAmount: null,
-        ethAddress: null,
-        bnbAmount: null,
-        bnbAddress: null,
-        prices: prices,
-        errorMessage: "Withdrawals are currently disabled." // 👈 This line is key
-      });
-    } else {
-      res.send("User not found.");
-    }
-  } catch (err) {
-    console.error(err);
-    res.send("Error processing withdrawal.");
-  }
-});
 
 app.post('/deposit', async (req, res) => {
   const { coin, amount, pkg } = req.body;
