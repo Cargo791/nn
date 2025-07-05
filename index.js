@@ -455,7 +455,7 @@ app.post('/withdraw', async (req, res) => {
         }
 
         // Record the withdrawal request
-        await pool.query(
+        await db.query(
             'INSERT INTO transactions (email, type, coin_type, address, amount) VALUES ($1, $2, $3, $4, $5)',
             [email, 'withdrawal', coin_type, address, 0] // Replace 0 with actual amount if needed
         );
