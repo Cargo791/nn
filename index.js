@@ -609,7 +609,7 @@ app.post("/change-password", async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await pool.query(
+    await db.query(
       "UPDATE users SET password = $1 WHERE email = $2",
       [hashedPassword, userEmail]
     );
