@@ -593,9 +593,12 @@ app.get('/logout', (req, res) => {
   });
 });
 
+
+
+ 
 app.post("/change-password", async (req, res) => {
   const { newPassword, confirmPassword } = req.body;
-  const userEmail = req.session.user?.email;
+  const userEmail = req.session.user_email; // ✅ fixed
 
   if (!userEmail) return res.redirect("/login");
 
@@ -607,9 +610,9 @@ app.post("/change-password", async (req, res) => {
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10); // ✅ requires import
 
-    await db.query(
+    await db.query( // ✅ use "db", not "pool"
       "UPDATE users SET password = $1 WHERE email = $2",
       [hashedPassword, userEmail]
     );
@@ -619,7 +622,7 @@ app.post("/change-password", async (req, res) => {
       errorMessage: null,
     });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Password change error:", error);
     return res.render("secrets", {
       errorMessage: "Error updating password.",
       successMessage: null,
