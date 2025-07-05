@@ -116,7 +116,7 @@ app.get('/secrets', async (req, res) => {
     );
     const transactions = txResult.rows;
 
-    const prices = await getCryptoPricesCachedCached();
+    const prices = await getCryptoPricesCached();
     // Use user fields for deposit, profit, withdrawal or set 0 as fallback
     res.render('secrets', {
       name: user.full_name,
@@ -489,33 +489,7 @@ app.post("/approve-payment", async (req, res) => {
 });
 
 
- export async function getCryptoPricesCached() {
-  try {
-    const response = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
-      params: {
-        ids: "bitcoin,ethereum,solana,binancecoin",
-        vs_currencies: "usd"
-      }
-    });
-
-    const data = response.data;
-
-    return {
-      btc: data.bitcoin?.usd || 0,
-      eth: data.ethereum?.usd || 0,
-      sol: data.solana?.usd || 0,
-      bnb: data.binancecoin?.usd || 0
-    };
-  } catch (error) {
-    console.error("Error fetching prices:", error);
-    return {
-      btc: 0,
-      eth: 0,
-      sol: 0,
-      bnb: 0
-    };
-  }
-}
+  
 
 app.post('/deposit', async (req, res) => {
   const { coin, amount, pkg } = req.body;
