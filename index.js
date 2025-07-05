@@ -12,18 +12,11 @@ import axios from "axios"
 
 dotenv.config();
 
-// Simple in-memory cache
+// ✅ USE THIS INSTEAD
 let priceCache = null;
-let lastFetched = 0;
-const CACHE_DURATION_MS = 60 * 1000; // 1 minute
 
-async function getCryptoPricesCached() {
-  const now = Date.now();
-
-  if (priceCache && now - lastFetched < CACHE_DURATION_MS) {
-    return priceCache;
-  }
-
+// Fetch function
+async function fetchPrices() {
   try {
     const response = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
       params: {
@@ -31,18 +24,22 @@ async function getCryptoPricesCached() {
         vs_currencies: "usd",
       },
     });
-
     priceCache = response.data;
-    lastFetched = now;
-    return priceCache;
+    console.log("✅ Crypto prices updated:", priceCache);
   } catch (error) {
-    console.error("❌ Price API Error:", error.message);
-    // Return cached value if available
-    if (priceCache) return priceCache;
-    throw error;
+    console.error("❌ Failed to fetch prices:", error.message);
+    // Keep old priceCache if fetch fails
   }
 }
 
+// Refresh prices every 2 minutes
+fetchPrices(); // Initial call
+setInterval(fetchPrices, 2 * 60 * 1000); // Every 2 mins
+
+// Use this in your routes
+function getCryptoPricesCached() {
+  return priceCache;
+}
 
 const app = express();
 app.set("view engine", "ejs")
@@ -129,7 +126,7 @@ app.get('/secrets', async (req, res) => {
     );
     const transactions = txResult.rows;
 
-    const prices = await getCryptoPricesCached();
+    const prices = getCryptoPricesCached();
     // Use user fields for deposit, profit, withdrawal or set 0 as fallback
     res.render('secrets', {
       name: user.full_name,
@@ -245,7 +242,7 @@ app.post("/login", async (req, res) => {
       if (password === user.password) {
         req.session.user_email = user.email;
 
-        const prices = await getCryptoPricesCached();
+        const prices = getCryptoPricesCached();
 
         const btc_balance = parseFloat(user.btc_balance) || 0;
         const sol_balance = parseFloat(user.sol_balance) || 0;
@@ -486,7 +483,7 @@ app.post("/approve-payment", async (req, res) => {
     ]);
 
     const updatedUser = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-    const prices = await getCryptoPricesCached();
+    const prices = getCryptoPricesCached();
     res.render("secrets.ejs", {
       name: updatedUser.rows[0].full_name,
       email: updatedUser.rows[0].email,
