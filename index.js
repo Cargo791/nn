@@ -12,6 +12,24 @@ import axios from "axios"
 
 dotenv.config();
 
+let cachedPrices = null;
+let lastFetchTime = 0;
+
+async function getCryptoPricesCached() {
+  const now = Date.now();
+  if (!cachedPrices || now - lastFetchTime > 60000) { // cache for 60 seconds
+    const response = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
+      params: {
+        ids: "bitcoin,ethereum,solana,binancecoin",
+        vs_currencies: "usd",
+      },
+    });
+    cachedPrices = response.data;
+    lastFetchTime = now;
+  }
+  return cachedPrices;
+}
+
 
 const app = express();
 app.set("view engine", "ejs")
@@ -98,8 +116,7 @@ app.get('/secrets', async (req, res) => {
     );
     const transactions = txResult.rows;
 
-    const prices = await getCryptoPrices();
- 
+    const prices = await getCryptoPricesCachedCached();
     // Use user fields for deposit, profit, withdrawal or set 0 as fallback
     res.render('secrets', {
       name: user.full_name,
@@ -189,7 +206,8 @@ await db.query(
       prices: {},
       profit: 0,
       withdrawal: 0,
-      transactions: []
+      transactions: [],
+      message: null
     });
 
   } catch (err) {
@@ -214,7 +232,7 @@ app.post("/login", async (req, res) => {
       if (password === user.password) {
         req.session.user_email = user.email;
 
-        const prices = await getCryptoPrices();
+        const prices = await getCryptoPricesCached();
 
         const btc_balance = parseFloat(user.btc_balance) || 0;
         const sol_balance = parseFloat(user.sol_balance) || 0;
@@ -254,7 +272,8 @@ const depositTotal = parseFloat(depositResult.rows[0].total) || 0;
           prices: prices,
           profit: parseFloat(user.profit_btc) || 0,
           withdrawal: parseFloat(user.withdrawal_btc) || 0,
-          transactions: transactions
+          transactions: transactions,
+          message: null
         });
       } else {
         console.log("❌ Incorrect password");
@@ -319,6 +338,7 @@ app.post("/start-btc-payment", async (req, res) => {
       balance: user.rows[0].balance,
       paymentStatus: 'processing',
       btcAmount: amount,
+      message: null,
       btcAddress: "bc1q87yng5l9kyl7390gm80nreq2qmw3v7f0ryx699"
     });
 
@@ -346,6 +366,7 @@ app.post("/start-sol-payment", async (req, res) => {
       balance: user.rows[0].balance,
       paymentStatus: 'processing',
       solAmount: amount,
+      message: null,
       solAddress: "9D8d3DL9sYSHU9VVnateJEeosKg31MZNPNMJxMWkAs13"
     });
 
@@ -373,6 +394,7 @@ app.post("/start-bnb-payment", async (req, res) => {
       balance: user.rows[0].balance,
       paymentStatus: 'processing',
       bnbAmount: amount,
+      message: null,
       bnbAddress: "0x497785495154a4D919Cd0aA047Fc23a778bd6337"
     });
 
@@ -393,6 +415,7 @@ app.post("/start-eth-payment", (req, res) => {
     balance: "0",
     paymentStatus: "processing",
     ethAmount: amount,
+    message: null,
     ethAddress: "0x497785495154a4D919Cd0aA047Fc23a778bd6337",
   });
 });
@@ -450,10 +473,11 @@ app.post("/approve-payment", async (req, res) => {
     ]);
 
     const updatedUser = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-    const prices = await getCryptoPrices();
+    const prices = await getCryptoPricesCached();
     res.render("secrets.ejs", {
       name: updatedUser.rows[0].full_name,
       email: updatedUser.rows[0].email,
+      message: null,
       balance: updatedUser.rows[0].balance,
       paymentStatus: 'confirmed'
     });
@@ -465,7 +489,7 @@ app.post("/approve-payment", async (req, res) => {
 });
 
 
- export async function getCryptoPrices() {
+ export async function getCryptoPricesCached() {
   try {
     const response = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
       params: {
