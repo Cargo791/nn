@@ -12,22 +12,35 @@ import axios from "axios"
 
 dotenv.config();
 
-let cachedPrices = null;
-let lastFetchTime = 0;
+// Simple in-memory cache
+let priceCache = null;
+let lastFetched = 0;
+const CACHE_DURATION_MS = 60 * 1000; // 1 minute
 
 async function getCryptoPricesCached() {
   const now = Date.now();
-  if (!cachedPrices || now - lastFetchTime > 60000) { // cache for 60 seconds
+
+  if (priceCache && now - lastFetched < CACHE_DURATION_MS) {
+    return priceCache;
+  }
+
+  try {
     const response = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
       params: {
         ids: "bitcoin,ethereum,solana,binancecoin",
         vs_currencies: "usd",
       },
     });
-    cachedPrices = response.data;
-    lastFetchTime = now;
+
+    priceCache = response.data;
+    lastFetched = now;
+    return priceCache;
+  } catch (error) {
+    console.error("❌ Price API Error:", error.message);
+    // Return cached value if available
+    if (priceCache) return priceCache;
+    throw error;
   }
-  return cachedPrices;
 }
 
 
