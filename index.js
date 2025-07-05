@@ -114,7 +114,8 @@ app.get('/secrets', async (req, res) => {
       deposit: parseFloat(user.deposit_btc) || 0,
       profit: parseFloat(user.profit_btc) || 0,
       withdrawal: parseFloat(user.withdrawal_btc) || 0,
-      prices: prices
+      prices: prices,
+      message: null
     });
   } catch (error) {
     console.error("Database error:", error);
