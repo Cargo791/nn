@@ -10,7 +10,10 @@
 
           <!-- Makes POST request to /login route -->
           <form action="/login" method="POST">
+             <fieldset>
             <div class="form-group">
+             
+                <legend>Login</legend>
               <label for="email">Email</label>
               <input type="email" class="form-control" name="username">
             </div>
@@ -19,6 +22,7 @@
               <input type="password" class="form-control" name="password">
             </div>
             <button type="submit" class="btn btn-dark">Login</button>
+              </fieldset>
           </form>
       <p><a href="/forgot-password">Forgot your password</a></p>
 
