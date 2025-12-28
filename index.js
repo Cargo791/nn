@@ -55,7 +55,6 @@ const upload = multer();
 
 
 // Force IPv4
-
 import pg from "pg";
 const { Pool } = pg;
 
@@ -64,27 +63,26 @@ let db;
 function createPool() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { require: true, rejectUnauthorized: false },
+    ssl: {
+      rejectUnauthorized: false,
+    },
     family: 4,
   });
 
-  // Test connection immediately
   pool.query("SELECT NOW()")
     .then(() => console.log("✅ Connected to database"))
     .catch(err => {
       console.error("❌ DB connection failed:", err.message);
-      // Retry after 3 seconds if failed
       setTimeout(() => {
         console.log("🔄 Retrying DB connection...");
         db = createPool();
       }, 3000);
     });
 
-  // Listen for unexpected errors and reconnect
   pool.on("error", (err) => {
     console.error("❌ Unexpected DB error:", err.message);
     console.log("🔄 Attempting to reconnect...");
-    db = createPool(); // recreate pool
+    db = createPool();
   });
 
   return pool;
@@ -92,6 +90,9 @@ function createPool() {
 
 // Initialize pool
 db = createPool();
+
+export default db;
+
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
