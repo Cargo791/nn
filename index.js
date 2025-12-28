@@ -5,7 +5,6 @@ import fetch from "node-fetch";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import pg from "pg";
 import multer from "multer";
 import nodemailer from "nodemailer";
 import axios from "axios"
