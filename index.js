@@ -63,12 +63,11 @@ let db;
 function createPool() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-    family: 4,
+    ssl: { rejectUnauthorized: false },
+    family: 4, // ✅ force IPv4
   });
 
+  // Test connection immediately
   pool.query("SELECT NOW()")
     .then(() => console.log("✅ Connected to database"))
     .catch(err => {
@@ -79,6 +78,7 @@ function createPool() {
       }, 3000);
     });
 
+  // Listen for unexpected errors and reconnect
   pool.on("error", (err) => {
     console.error("❌ Unexpected DB error:", err.message);
     console.log("🔄 Attempting to reconnect...");
