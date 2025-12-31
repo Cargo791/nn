@@ -9,6 +9,7 @@ import pg from "pg";
 import multer from "multer";
 import nodemailer from "nodemailer";
 import axios from "axios"
+import bcrypt from "bcrypt";
 
 dotenv.config();
 
@@ -169,11 +170,12 @@ app.get('/secrets', async (req, res) => {
       return res.send("Email already exists. Try logging in.");
     } // ✅ ← THIS WAS MISSING
 
-    console.log("📝 Inserting new user...");
-    const result = await db.query(
-      "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3) RETURNING *",
-      [email, password, name]
-    );
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+const result = await db.query(
+  "INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING *",
+  [email, hashedPassword, name]
+);
 
     const user = result.rows[0];
     const deposit = 0;
@@ -239,7 +241,9 @@ app.post("/login", async (req, res) => {
     if (result.rows.length > 0) {
       const user = result.rows[0];
 
-      if (password === user.password) {
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+
+if (isMatch) { 
         req.session.user_email = user.email;
 
         const prices = getCryptoPricesCached();
