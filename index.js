@@ -173,7 +173,7 @@ app.get('/secrets', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
 const result = await db.query(
-  "INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING *",
+  "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING *",
   [email, hashedPassword, name]
 );
 
