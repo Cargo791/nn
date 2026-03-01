@@ -246,13 +246,13 @@ app.post("/login", async (req, res) => {
 
     const depositResult = await db.query(
       "SELECT COALESCE(SUM(amount),0) as total FROM deposits WHERE email=$1",
-      [user.email]
+      [user.id]
     );
     const depositTotal = parseFloat(depositResult.rows[0].total) || 0;
 
     const transactionsResult = await db.query(
       "SELECT * FROM transactions WHERE email = $1 ORDER BY created_at DESC",
-      [user.email]
+      [user.id]
     );
     const transactions = transactionsResult.rows || [];
 
