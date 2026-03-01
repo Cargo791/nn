@@ -14,7 +14,6 @@ dotenv.config();
 
 // ================= Crypto Prices Cache =================
 let priceCache = null;
-
 async function fetchPrices() {
   try {
     const response = await axios.get(
@@ -32,11 +31,8 @@ async function fetchPrices() {
     console.error("❌ Failed to fetch prices:", error.message);
   }
 }
-
-// Initial fetch and every 2 minutes
 fetchPrices();
 setInterval(fetchPrices, 2 * 60 * 1000);
-
 function getCryptoPricesCached() {
   return priceCache;
 }
@@ -90,7 +86,7 @@ app.get("/secrets", async (req, res) => {
   if (!userEmail) return res.redirect("/login");
 
   try {
-    const userResult = await db.query("SELECT * FROM users WHERE email=$1", [userEmail]);
+    const userResult = await db.query("SELECT * FROM users WHERE email = $1", [userEmail]);
     const user = userResult.rows[0];
     if (!user) return res.send("❌ User not found.");
 
@@ -99,15 +95,13 @@ app.get("/secrets", async (req, res) => {
     const sol = parseFloat(user.sol_balance) || 0;
     const bnb = parseFloat(user.bnb_balance) || 0;
 
-    // ✅ Fetch transactions by user_id
     const txResult = await db.query(
-      "SELECT * FROM transactions WHERE user_id=$1 ORDER BY created_at DESC",
+      "SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC",
       [user.id]
     );
 
-    // ✅ Fetch deposits by user_id
     const depositResult = await db.query(
-      "SELECT COALESCE(SUM(amount),0) AS total FROM deposits WHERE user_id=$1",
+      "SELECT COALESCE(SUM(amount),0) AS total FROM deposits WHERE user_id = $1",
       [user.id]
     );
     const depositTotal = parseFloat(depositResult.rows[0].total) || 0;
@@ -148,7 +142,7 @@ app.post("/register", async (req, res) => {
   if (!full_name || !email || !password) return res.send("Please fill all required fields.");
 
   try {
-    const checkResult = await db.query("SELECT * FROM users WHERE email=$1", [email]);
+    const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [email]);
     if (checkResult.rows.length > 0) return res.send("Email already exists. Try logging in.");
 
     const hashedPassword = await bcryptjs.hash(password, 10);
@@ -158,24 +152,24 @@ app.post("/register", async (req, res) => {
     );
     const user = result.rows[0];
 
-    // Initialize empty transactions and deposits
+    // Initialize empty transactions & deposits
     await db.query(
-      `INSERT INTO transactions (user_id, full_name, coin_type, amount, type, status, receipt_url)
-       VALUES ($1, $2, 'N/A', 0, 'N/A', 'N/A', NULL)`,
-      [user.id, full_name]
+      `INSERT INTO transactions (user_id, coin_type, amount, type, status, receipt_url)
+       VALUES ($1,'N/A',0,'N/A','N/A',NULL)`,
+      [user.id]
     );
 
     await db.query(
-      `INSERT INTO deposits (user_id, full_name, coin, amount, pkg, status)
-       VALUES ($1, $2, 'N/A', 0, 'N/A', 'registered')`,
-      [user.id, full_name]
+      `INSERT INTO deposits (user_id, coin, amount, pkg, status)
+       VALUES ($1,'N/A',0,'N/A','registered')`,
+      [user.id]
     );
 
     res.render("secrets.ejs", {
       name: user.full_name,
       email: user.email,
       balance: 0,
-      paymentStatus: 'none',
+      paymentStatus: "none",
       btc: 0,
       eth: 0,
       sol: 0,
@@ -187,6 +181,7 @@ app.post("/register", async (req, res) => {
       prices: {},
       message: "Registration successful!"
     });
+
   } catch (err) {
     console.error("❌ REGISTER ERROR:", err.stack);
     res.status(500).send("Server error: " + err.message);
@@ -199,7 +194,7 @@ app.post("/login", async (req, res) => {
   if (!username || !password) return res.send("Enter email and password.");
 
   try {
-    const result = await db.query("SELECT * FROM users WHERE email=$1", [username]);
+    const result = await db.query("SELECT * FROM users WHERE email = $1", [username]);
     if (result.rows.length === 0) return res.send("User not found.");
     const user = result.rows[0];
 
@@ -208,14 +203,13 @@ app.post("/login", async (req, res) => {
 
     req.session.user_email = user.email;
 
-    // Fetch balances
     const btc_balance = parseFloat(user.btc_balance) || 0;
     const sol_balance = parseFloat(user.sol_balance) || 0;
     const eth_balance = parseFloat(user.eth_balance) || 0;
     const bnb_balance = parseFloat(user.bnb_balance) || 0;
 
     const depositResult = await db.query(
-      "SELECT COALESCE(SUM(amount),0) as total FROM deposits WHERE user_id=$1",
+      "SELECT COALESCE(SUM(amount),0) AS total FROM deposits WHERE user_id=$1",
       [user.id]
     );
     const depositTotal = parseFloat(depositResult.rows[0].total) || 0;
@@ -224,9 +218,6 @@ app.post("/login", async (req, res) => {
       "SELECT * FROM transactions WHERE user_id=$1 ORDER BY created_at DESC",
       [user.id]
     );
-    const transactions = transactionsResult.rows || [];
-
-    const prices = getCryptoPricesCached();
 
     res.render("secrets.ejs", {
       name: user.full_name,
@@ -240,10 +231,11 @@ app.post("/login", async (req, res) => {
       deposit: depositTotal,
       profit: parseFloat(user.profit_btc) || 0,
       withdrawal: parseFloat(user.withdrawal_btc) || 0,
-      transactions,
-      prices,
+      transactions: transactionsResult.rows,
+      prices: getCryptoPricesCached(),
       message: "Login successful!"
     });
+
   } catch (err) {
     console.error("❌ LOGIN ERROR:", err);
     res.status(500).send("Server error: " + err.message);
@@ -264,31 +256,11 @@ app.post("/deposit", async (req, res) => {
       "INSERT INTO deposits (user_id, coin, amount, pkg, status) VALUES ($1,$2,$3,$4,'processing')",
       [userId, coin, amount, pkg]
     );
+
     res.redirect("/secrets");
   } catch (err) {
     console.error(err);
     res.send("❌ Deposit failed");
-  }
-});
-
-// ================= Transactions =================
-app.post("/submit-transaction", async (req, res) => {
-  const { coin_type, amount, type, pkg, receipt_url } = req.body;
-  const userEmail = req.session.user_email;
-  if (!userEmail) return res.redirect("/login");
-
-  try {
-    const userResult = await db.query("SELECT id FROM users WHERE email=$1", [userEmail]);
-    const userId = userResult.rows[0].id;
-
-    await db.query(
-      "INSERT INTO transactions (user_id, coin_type, amount, type, package, status, receipt_url) VALUES($1,$2,$3,$4,$5,'processing',$6)",
-      [userId, coin_type, amount, type, pkg, receipt_url]
-    );
-    res.send("✅ Transaction submitted successfully.");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("❌ Failed to submit transaction.");
   }
 });
 
