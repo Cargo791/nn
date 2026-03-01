@@ -9,7 +9,7 @@ import pg from "pg";
 import multer from "multer";
 import nodemailer from "nodemailer";
 import axios from "axios";
-import bcrypt from "bcrypt";
+import bcryptjs from "bcryptjs";
 
 dotenv.config();
 
