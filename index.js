@@ -102,7 +102,7 @@ app.get("/secrets", async (req, res) => {
 
     const txResult = await db.query(
       "SELECT * FROM transactions WHERE email = $1 ORDER BY created_at DESC",
-      [userEmail]
+      [user.id]
     );
 
     const depositResult = await db.query(
@@ -335,7 +335,7 @@ app.post("/deposit", async (req, res) => {
   try {
     await db.query(
       "INSERT INTO deposits (email, coin, amount, pkg, status) VALUES ($1,$2,$3,$4,'processing')",
-      [email, coin, amount, pkg]
+      [user.id, coin, amount, pkg]
     );
     res.redirect("/secrets");
   } catch (err) {
