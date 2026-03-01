@@ -143,57 +143,64 @@ app.get("/secrets", async (req, res) => {
 
 // ================= Registration =================
 app.post("/register", async (req, res) => {
-  const { name, email, password, country, phone } = req.body;
+  const fullName = req.body.full_name; // matches your table
+  const email = req.body.email;
+  const password = req.body.password;
+
+  if (!fullName || !email || !password) {
+    return res.send("Please fill all required fields.");
+  }
 
   try {
-    // Check if user exists
-    const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (checkResult.rows.length > 0) return res.send("Email already exists. Try logging in.");
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert user
-    const result = await db.query(
-      "INSERT INTO users (email, password, full_name) VALUES ($1, $2, $3) RETURNING *",
-      [email, hashedPassword, name]
+    // 1️⃣ Check if user already exists
+    const checkResult = await db.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
     );
+    if (checkResult.rows.length > 0) {
+      return res.send("Email already exists. Try logging in.");
+    }
+
+    // 2️⃣ Hash the password
+    const hashedPassword = await bcryptjs.hash(password, 10);
+
+    // 3️⃣ Insert user into database
+    const result = await db.query(
+      "INSERT INTO users (full_name, email, password_hash) VALUES ($1, $2, $3) RETURNING *",
+      [fullName, email, hashedPassword]
+    );
+
     const user = result.rows[0];
 
-    // Initialize transactions & deposits
+    // 4️⃣ Initialize empty balances/transactions (optional)
     await db.query(
-      "INSERT INTO transactions (email, full_name, coin_type, amount, type, package, status, receipt_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
-      [email, name, "N/A", 0, "N/A", "N/A", "N/A", null]
-    );
-    await db.query(
-      "INSERT INTO deposits (email, full_name, coin, amount, pkg, status) VALUES ($1,$2,$3,$4,$5,$6)",
-      [email, name, "N/A", 0, "N/A", "registered"]
+      "INSERT INTO transactions (email, full_name, coin_type, amount, type, package, status, receipt_url) VALUES ($1,$2,'N/A',0,'N/A','N/A','N/A',NULL)",
+      [email, fullName]
     );
 
-    res.render("secrets", {
+    await db.query(
+      "INSERT INTO deposits (email, full_name, coin, amount, pkg, status) VALUES ($1,$2,'N/A',0,'N/A','registered')",
+      [email, fullName]
+    );
+
+    // 5️⃣ Render dashboard after registration
+    res.render("secrets.ejs", {
       name: user.full_name,
       email: user.email,
       balance: 0,
-      paymentStatus: "none",
+      paymentStatus: 'none',
       btc: 0,
-      sol: 0,
       eth: 0,
+      sol: 0,
       bnb: 0,
-      btcAmount: null,
-      btcAddress: null,
-      solAmount: null,
-      solAddress: null,
-      ethAmount: null,
-      ethAddress: null,
-      bnbAmount: null,
-      bnbAddress: null,
-      prices: getCryptoPricesCached(),
+      deposit: 0,
       profit: 0,
       withdrawal: 0,
       transactions: [],
-      deposit: 0,
-      message: null,
+      prices: {},
+      message: "Registration successful!"
     });
+
   } catch (err) {
     console.error("❌ REGISTER ERROR:", err.stack);
     res.status(500).send("Server error: " + err.message);
@@ -205,57 +212,66 @@ app.post("/login", async (req, res) => {
   const email = req.body.username;
   const password = req.body.password;
 
+  if (!email || !password) return res.send("Enter email and password.");
+
   try {
-    const result = await db.query("SELECT * FROM users WHERE email=$1", [email]);
-    if (result.rows.length === 0) return res.send("User not found");
+    const result = await db.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.send("User not found");
+    }
 
     const user = result.rows[0];
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.send("Incorrect Password");
 
+    // ✅ Compare password with hash
+    const isMatch = await bcryptjs.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.send("Incorrect password");
+    }
+
+    // ✅ Password matches → create session
     req.session.user_email = user.email;
 
+    // Fetch balances
     const btc_balance = parseFloat(user.btc_balance) || 0;
     const sol_balance = parseFloat(user.sol_balance) || 0;
     const eth_balance = parseFloat(user.eth_balance) || 0;
     const bnb_balance = parseFloat(user.bnb_balance) || 0;
 
-    const transactionsResult = await db.query(
-      "SELECT * FROM transactions WHERE email=$1 ORDER BY created_at DESC",
-      [user.email]
-    );
-    const transactions = transactionsResult.rows || [];
-
     const depositResult = await db.query(
-      "SELECT COALESCE(SUM(amount),0) AS total FROM deposits WHERE email=$1",
+      "SELECT COALESCE(SUM(amount),0) as total FROM deposits WHERE email=$1",
       [user.email]
     );
     const depositTotal = parseFloat(depositResult.rows[0].total) || 0;
 
-    res.render("secrets", {
+    const transactionsResult = await db.query(
+      "SELECT * FROM transactions WHERE email = $1 ORDER BY created_at DESC",
+      [user.email]
+    );
+    const transactions = transactionsResult.rows || [];
+
+    const prices = getCryptoPricesCached();
+
+    res.render("secrets.ejs", {
       name: user.full_name,
       email: user.email,
       balance: user.balance || 0,
       paymentStatus: user.payment_status || "none",
       btc: btc_balance,
-      deposit: depositTotal,
       sol: sol_balance,
       eth: eth_balance,
       bnb: bnb_balance,
-      btcAmount: null,
-      btcAddress: null,
-      solAmount: null,
-      solAddress: null,
-      ethAmount: null,
-      ethAddress: null,
-      bnbAmount: null,
-      bnbAddress: null,
-      prices: getCryptoPricesCached(),
+      deposit: depositTotal,
       profit: parseFloat(user.profit_btc) || 0,
       withdrawal: parseFloat(user.withdrawal_btc) || 0,
       transactions: transactions,
-      message: null,
+      prices: prices,
+      message: "Login successful!"
     });
+
   } catch (err) {
     console.error("❌ LOGIN ERROR:", err);
     res.status(500).send("Server error: " + err.message);
