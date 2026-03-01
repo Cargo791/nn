@@ -1,56 +1,44 @@
 <%- include('partials/header') %>
-  <div class="container mt-5">
-    
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-sm-8">
+      <div class="card">
+        <div class="card-body">
+          <form action="/register" method="POST">
+            <fieldset>
+              <legend><b>Register</b></legend>
 
-    <div class="row">
-      <div class="col-sm-8">
-        <div class="card">
-          <div class="card-body">
-
-            <!-- Makes POST request to /register route -->
-            <form action="/register" method="POST">
-                  <fieldset>
-                       <legend><b>Register </b></legend>
-               <div class="form-group">
-                <label for="name">Name</label>
-                <input type="text" class="form-control" name="name" required>
+              <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" class="form-control" name="full_name" required>
               </div>
-               <div class="form-group">
-                <label for="name">Country</label>
+
+              <div class="form-group">
+                <label for="country">Country</label>
                 <input type="text" class="form-control" name="country" required>
               </div>
-               <div class="form-group">
-                <label for="number">Phone</label>
+
+              <div class="form-group">
+                <label for="phone">Phone</label>
                 <input type="tel" class="form-control" name="phone" required>
               </div>
+
               <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" class="form-control" name="email" required>
               </div>
+
               <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" class="form-control" name="password" required>
               </div>
-              <button type="submits" class="btn btn-dark">Register</button>
-             </fieldset>
-             </form>
 
-          </div>
+              <button type="submit" class="btn btn-dark">Register</button>
+            </fieldset>
+          </form>
         </div>
       </div>
-
-      <!-- <div class="col-sm-4">
-      <div class="card social-block">
-        <div class="card-body">
-          <a class="btn btn-block" href="/auth/google" role="button">
-            <i class="fab fa-google"></i>
-            Sign Up with Google
-          </a>
-        </div>
-      </div>
-    </div> -->
-
     </div>
   </div>
-
-  <%- include('partials/header') %>
+</div>
+<%- include('partials/header') %>
