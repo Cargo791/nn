@@ -173,14 +173,17 @@ app.post("/register", async (req, res) => {
     const user = result.rows[0];
 
     // 4️⃣ Initialize empty balances/transactions (optional)
-    await db.query(
-      "INSERT INTO transactions (email, full_name, coin_type, amount, type, package, status, receipt_url) VALUES ($1,$2,'N/A',0,'N/A','N/A','N/A',NULL)",
-      [email, fullName]
-    );
+   // Use user_id instead of email
+await db.query(
+  `INSERT INTO transactions 
+    (user_id, full_name, coin_type, amount, type, status, receipt_url)
+   VALUES ($1,$2,'N/A',0,'N/A','N/A',NULL)`,
+  [user.id, fullName]
+);
 
     await db.query(
       "INSERT INTO deposits (email, full_name, coin, amount, pkg, status) VALUES ($1,$2,'N/A',0,'N/A','registered')",
-      [email, fullName]
+      [user.id, fullName]
     );
 
     // 5️⃣ Render dashboard after registration
