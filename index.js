@@ -421,7 +421,7 @@ app.post("/submit-transaction", async (req, res) => {
   try {
     await db.query(
       "INSERT INTO transactions (email, coin_type, amount, type, package, status, receipt_url) VALUES($1,$2,$3,$4,$5,'processing',$6)",
-      [email, coin_type, amount, type, pkg, receipt_url]
+      [user_id, coin_type, amount, type, pkg, receipt_url]
     );
     res.send("✅ Transaction submitted successfully.");
   } catch (err) {
@@ -435,17 +435,24 @@ app.get("/transaction-history", async (req, res) => {
   if (!userEmail) return res.redirect("/login");
 
   try {
-    const result = await db.query(
-      "SELECT * FROM transactions WHERE email=$1 ORDER BY created_at DESC",
-      [userEmail]
+    // Get the user's ID first
+    const userResult = await db.query("SELECT id FROM users WHERE email=$1", [userEmail]);
+    if (userResult.rows.length === 0) return res.send("User not found.");
+
+    const userId = userResult.rows[0].id;
+
+    // Fetch transactions using user_id
+    const txResult = await db.query(
+      "SELECT * FROM transactions WHERE user_id=$1 ORDER BY created_at DESC",
+      [userId]
     );
-    res.render("transaction-history", { transactions: result.rows });
+
+    res.render("transaction-history", { transactions: txResult.rows });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
   }
 });
-
 // ================= Upload Receipt =================
 app.post("/upload-receipt", upload.single("receipt"), async (req, res) => {
   if (!req.file) return res.send("❌ No file uploaded.");
