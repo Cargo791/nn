@@ -107,7 +107,7 @@ app.get("/secrets", async (req, res) => {
 
     const depositResult = await db.query(
       "SELECT COALESCE(SUM(amount),0) AS total FROM deposits WHERE email=$1",
-      [userEmail]
+      [user.id]
     );
     const depositTotal = parseFloat(depositResult.rows[0].total) || 0;
 
