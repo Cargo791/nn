@@ -8,15 +8,56 @@ import pg from "pg";
 import multer from "multer";
 import nodemailer from "nodemailer";
 import axios from "axios";
-import bcryptjs from "bcryptjs";
+import bcrypt from "bcryptjs";
 
 dotenv.config();
 
-// ================= Crypto Prices Cache =================
-let priceCache = null;
+// ================= App Setup =================
+const app = express();
+app.set("view engine", "ejs");
+
+const port = process.env.PORT || 3000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const upload = multer();
+
+// ================= DB =================
+const { Pool } = pg;
+
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { require: true, rejectUnauthorized: false },
+  family: 4,
+});
+
+db.query("SELECT NOW()")
+  .then(() => console.log("✅ DB connected"))
+  .catch(err => console.error("❌ DB error:", err.stack));
+
+// ================= Middleware =================
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static("public"));
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "secret",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// ================= Crypto Prices (SAFE) =================
+let priceCache = {
+  bitcoin: { usd: 0 },
+  ethereum: { usd: 0 },
+  solana: { usd: 0 },
+  binancecoin: { usd: 0 },
+};
+
 async function fetchPrices() {
   try {
-    const response = await axios.get(
+    const res = await axios.get(
       "https://api.coingecko.com/api/v3/simple/price",
       {
         params: {
@@ -25,47 +66,18 @@ async function fetchPrices() {
         },
       }
     );
-    priceCache = response.data;
-    console.log("✅ Crypto prices updated:", priceCache);
-  } catch (error) {
-    console.error("❌ Failed to fetch prices:", error.message);
+    priceCache = res.data;
+  } catch (err) {
+    console.log("Price fetch failed (using cache)");
   }
 }
+
 fetchPrices();
-setInterval(fetchPrices, 2 * 60 * 1000);
-function getCryptoPricesCached() {
-  return priceCache;
-}
+setInterval(fetchPrices, 120000);
 
-// ================= Express App Setup =================
-const app = express();
-app.set("view engine", "ejs");
-const port = process.env.PORT || 3000;
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const getPrices = () => priceCache || {};
 
-const upload = multer();
-const { Pool } = pg;
-const db = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { require: true, rejectUnauthorized: false },
-  family: 4,
-});
-db.query("SELECT NOW()")
-  .then(() => console.log("✅ Connected to database"))
-  .catch((err) => console.error("❌ Failed to connect to database:", err.stack));
-
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public"));
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your-secret",
-    resave: false,
-    saveUninitialized: true,
-  })
-);
-
-// ================= Nodemailer Setup =================
+// ================= Nodemailer =================
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -74,53 +86,54 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ================= Routes =================
+// ================= ROUTES =================
 app.get("/", (req, res) => res.render("home.ejs"));
 app.get("/login", (req, res) => res.render("login.ejs"));
 app.get("/register", (req, res) => res.render("register.ejs"));
-app.get("/forgot-password", (req, res) => res.render("forgot-password"));
 
-// ================= Dashboard / Secrets =================
+// ================= DASHBOARD =================
 app.get("/secrets", async (req, res) => {
-  const userEmail = req.session.user_email;
-  if (!userEmail) return res.redirect("/login");
+  const email = req.session.user_email;
+
+  if (!email) return res.redirect("/login");
 
   try {
-    const userResult = await db.query("SELECT * FROM users WHERE email = $1", [userEmail]);
-    const user = userResult.rows[0];
-    if (!user) return res.send("❌ User not found.");
+    const userResult = await db.query(
+      "SELECT * FROM users WHERE email=$1",
+      [email]
+    );
 
-    const btc = parseFloat(user.btc_balance) || 0;
-    const eth = parseFloat(user.eth_balance) || 0;
-    const sol = parseFloat(user.sol_balance) || 0;
-    const bnb = parseFloat(user.bnb_balance) || 0;
+    const user = userResult.rows[0];
+    if (!user) return res.redirect("/login");
 
     const txResult = await db.query(
-      "SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC",
+      "SELECT * FROM transactions WHERE user_id=$1 ORDER BY created_at DESC",
       [user.id]
     );
 
     const depositResult = await db.query(
-      "SELECT COALESCE(SUM(amount),0) AS total FROM deposits WHERE user_id = $1",
+      "SELECT COALESCE(SUM(amount),0) AS total FROM deposits WHERE user_id=$1",
       [user.id]
     );
-    const depositTotal = parseFloat(depositResult.rows[0].total) || 0;
 
     res.render("secrets", {
       name: user.full_name,
       email: user.email,
       balance: user.balance || 0,
       paymentStatus: user.payment_status || "none",
-      btc,
-      eth,
-      sol,
-      bnb,
-      transactions: txResult.rows,
-      deposit: depositTotal,
-      profit: parseFloat(user.profit_btc) || 0,
-      withdrawal: parseFloat(user.withdrawal_btc) || 0,
-      prices: getCryptoPricesCached(),
-      message: null,
+
+      btc: user.btc_balance || 0,
+      eth: user.eth_balance || 0,
+      sol: user.sol_balance || 0,
+      bnb: user.bnb_balance || 0,
+
+      deposit: parseFloat(depositResult.rows[0].total) || 0,
+      profit: user.profit_btc || 0,
+      withdrawal: user.withdrawal_btc || 0,
+
+      transactions: txResult.rows || [],
+      prices: getPrices(),
+
       btcAmount: null,
       btcAddress: null,
       solAmount: null,
@@ -129,161 +142,98 @@ app.get("/secrets", async (req, res) => {
       ethAddress: null,
       bnbAmount: null,
       bnbAddress: null,
+
+      message: null,
     });
-  } catch (error) {
-    console.error("Database error:", error);
-    res.send("❌ Failed to fetch balance.");
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    res.status(500).send("Dashboard error");
   }
 });
 
-// ================= Registration =================
+// ================= REGISTER =================
 app.post("/register", async (req, res) => {
   const { full_name, email, password } = req.body;
-  if (!full_name || !email || !password) return res.send("Please fill all required fields.");
 
   try {
-    const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (checkResult.rows.length > 0) return res.send("Email already exists. Try logging in.");
-
-    const hashedPassword = await bcryptjs.hash(password, 10);
-    const result = await db.query(
-      "INSERT INTO users (full_name, email, password_hash) VALUES ($1, $2, $3) RETURNING *",
-      [full_name, email, hashedPassword]
+    const exists = await db.query(
+      "SELECT * FROM users WHERE email=$1",
+      [email]
     );
-    const user = result.rows[0];
 
-    // Initialize empty transactions & deposits
-    await db.query(
-      `INSERT INTO transactions (user_id, coin_type, amount, type, status, receipt_url)
-       VALUES ($1,'N/A',0,'N/A','N/A',NULL)`,
-      [user.id]
+    if (exists.rows.length > 0)
+      return res.send("Email already exists");
+
+    const hash = await bcrypt.hash(password, 10);
+
+    const result = await db.query(
+      `INSERT INTO users (full_name, email, password_hash)
+       VALUES ($1,$2,$3) RETURNING *`,
+      [full_name, email, hash]
+    );
+
+    const user = result.rows[0];
+    req.session.user_email = user.email;
+
+    res.redirect("/secrets");
+  } catch (err) {
+    console.error("Register error:", err);
+    res.status(500).send("Register failed");
+  }
+});
+
+// ================= LOGIN =================
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const result = await db.query(
+      "SELECT * FROM users WHERE email=$1",
+      [username]
+    );
+
+    const user = result.rows[0];
+    if (!user) return res.send("User not found");
+
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) return res.send("Wrong password");
+
+    req.session.user_email = user.email;
+
+    res.redirect("/secrets");
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).send("Login failed");
+  }
+});
+
+// ================= DEPOSIT =================
+app.post("/deposit", async (req, res) => {
+  const email = req.session.user_email;
+  const { coin, amount, pkg } = req.body;
+
+  if (!email) return res.redirect("/login");
+
+  try {
+    const user = await db.query(
+      "SELECT id FROM users WHERE email=$1",
+      [email]
     );
 
     await db.query(
       `INSERT INTO deposits (user_id, coin, amount, pkg, status)
-       VALUES ($1,'N/A',0,'N/A','registered')`,
-      [user.id]
-    );
-
-    res.render("secrets.ejs", {
-      name: user.full_name,
-      email: user.email,
-      balance: 0,
-      paymentStatus: "none",
-      btc: 0,
-      eth: 0,
-      sol: 0,
-      bnb: 0,
-      deposit: 0,
-      profit: 0,
-      withdrawal: 0,
-      transactions: [],
-      prices: {},
-      message: "Registration successful!"
-    });
-
-  } catch (err) {
-    console.error("❌ REGISTER ERROR:", err.stack);
-    res.status(500).send("Server error: " + err.message);
-  }
-});
-
-// ================= Login =================
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.send("Enter email and password.");
-
-  try {
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [username]);
-    if (result.rows.length === 0) return res.send("User not found.");
-    const user = result.rows[0];
-
-    const isMatch = await bcryptjs.compare(password, user.password_hash);
-    if (!isMatch) return res.send("Incorrect password.");
-
-    req.session.user_email = user.email;
-
-    const btc_balance = parseFloat(user.btc_balance) || 0;
-    const sol_balance = parseFloat(user.sol_balance) || 0;
-    const eth_balance = parseFloat(user.eth_balance) || 0;
-    const bnb_balance = parseFloat(user.bnb_balance) || 0;
-
-    const depositResult = await db.query(
-      "SELECT COALESCE(SUM(amount),0) AS total FROM deposits WHERE user_id=$1",
-      [user.id]
-    );
-    const depositTotal = parseFloat(depositResult.rows[0].total) || 0;
-
-    const transactionsResult = await db.query(
-      "SELECT * FROM transactions WHERE user_id=$1 ORDER BY created_at DESC",
-      [user.id]
-    );
-
-    res.render("secrets.ejs", {
-      name: user.full_name,
-      email: user.email,
-      balance: user.balance || 0,
-      paymentStatus: user.payment_status || "none",
-      btc: btc_balance,
-      sol: sol_balance,
-      eth: eth_balance,
-      bnb: bnb_balance,
-      deposit: depositTotal,
-      profit: parseFloat(user.profit_btc) || 0,
-      withdrawal: parseFloat(user.withdrawal_btc) || 0,
-      transactions: transactionsResult.rows,
-      prices: getCryptoPricesCached(),
-      message: "Login successful!"
-    });
-
-  } catch (err) {
-    console.error("❌ LOGIN ERROR:", err);
-    res.status(500).send("Server error: " + err.message);
-  }
-});
-
-// ================= Deposits =================
-app.post("/deposit", async (req, res) => {
-  const { coin, amount, pkg } = req.body;
-  const userEmail = req.session.user_email;
-  if (!userEmail) return res.redirect("/login");
-
-  try {
-    const userResult = await db.query("SELECT id FROM users WHERE email=$1", [userEmail]);
-    const userId = userResult.rows[0].id;
-
-    await db.query(
-      "INSERT INTO deposits (user_id, coin, amount, pkg, status) VALUES ($1,$2,$3,$4,'processing')",
-      [userId, coin, amount, pkg]
+       VALUES ($1,$2,$3,$4,'processing')`,
+      [user.rows[0].id, coin, amount, pkg]
     );
 
     res.redirect("/secrets");
   } catch (err) {
     console.error(err);
-    res.send("❌ Deposit failed");
+    res.send("Deposit error");
   }
 });
 
-// ================= Transaction History =================
-app.get("/transaction-history", async (req, res) => {
-  const userEmail = req.session.user_email;
-  if (!userEmail) return res.redirect("/login");
-
-  try {
-    const userResult = await db.query("SELECT id FROM users WHERE email=$1", [userEmail]);
-    const userId = userResult.rows[0].id;
-
-    const txResult = await db.query(
-      "SELECT * FROM transactions WHERE user_id=$1 ORDER BY created_at DESC",
-      [userId]
-    );
-
-    res.render("transaction-history", { transactions: txResult.rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
-
-// ================= Start Server =================
-app.listen(port, "0.0.0.0", () => console.log(`Server running on port ${port}`));
+// ================= START SERVER =================
+app.listen(port, () =>
+  console.log(`Server running on port ${port}`)
+);
